@@ -20,9 +20,9 @@ var a = function(a,b) {
         h = a.normal-a.min;
         c = ' (' + (h/a.normal*100).toFixed(2) + '% saved)';
     }
-	e = "javascript:(function(){var a=document.createElement('script');a.setAttribute('id','plugcubed-js');a.setAttribute('src','http://" + (b == "stable" ? "colgate" : "tatdk") + ".github.com/plugCubed/compiled/plugCubed";
+	e = "javascript:(function(){var a=document.createElement('script');a.setAttribute('id','plugcubed-js');document.body.appendChild(a);a.setAttribute('src','http://" + (b == "stable" ? "colgate" : "tatdk") + ".github.com/plugCubed/compiled/plugCubed";
 	f = a === false ? 'An error occured, please try again later' : null;
-	g = ".js');document.body.appendChild(a);}());";
+	g = ".js');}());";
 	if (a !== false) {
 		$("a." + b).attr("href",e + g);
 		$("a." + b + ".min").attr("href",e + (a === false ? '' : '.min') + g);
