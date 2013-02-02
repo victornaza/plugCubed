@@ -40,7 +40,7 @@ $(document).ready(function() {
 				url: 'http://colgate.github.com/plugCubed/js/size.json',
 				type: 'get',
 				error: function() { a(false,'stable'); },
-				success: function(b) { a(JSON.parse(b),'stable'); }
+				success: function(b) { a(b,'stable'); }
 			});
         } catch (e) { a({},'stable'); }
         try {
@@ -48,7 +48,7 @@ $(document).ready(function() {
 				url: 'http://tatdk.github.com/plugCubed/js/size.json',
 				type: 'get',
 				error: function() { a(false,'dev'); },
-				success: function(b) { a(JSON.parse(b),'dev'); }
+				success: function(b) { a(b,'dev'); }
 			});
         } catch (e) { a({},'dev'); }
     },50);
