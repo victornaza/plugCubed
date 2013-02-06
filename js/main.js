@@ -36,12 +36,12 @@ var a = function(a,b) {
 $(document).ready(function() {
     setTimeout(function() {
         try {
-            $.getJSON('http://colgate.github.com/plugCubed/js/size.json?callback=?',function(b) {
+            $.getJSON('http://colgate.github.com/plugCubed/js/size.json?callback=cb',function(b) {
                 a(b,'stable');
             }).error(function() { a(false,'stable'); });
         } catch (e) { a({},'stable'); }
         try {
-            $.getJSON('http://tatdk.github.com/plugCubed/js/size.json?callback=?',function(b) {
+            $.getJSON('http://tatdk.github.com/plugCubed/js/size.json?callback=cb',function(b) {
                 a(b,'dev');
             }).error(function() { a(false,'dev'); });
         } catch (e) { a({},'dev'); }
