@@ -20,15 +20,15 @@ var a = function(a,b) {
         h = a.normal-a.min;
         c = ' (' + (h/a.normal*100).toFixed(2) + '% saved)';
     }
-	e = "javascript:(function(){var a=document.createElement('script');a.setAttribute('id','plugcubed-js');document.body.appendChild(a);a.setAttribute('src','http://" + (b == "stable" ? "colgate" : "tatdk") + ".github.com/plugCubed/compiled/plugCubed";
-	f = a === false ? 'An error occured, please try again later' : null;
-	g = ".js');}());";
-	if (a !== false) {
-		$("a." + b).attr("href",e + g);
-		$("a." + b + ".min").attr("href",e + (a === false ? '' : '.min') + g);
-	}
-	$("pre." + b).text(f === null ? e + g : f);
-	$("pre." + b + ".min").text(f !== null ? f : e + (a === false ? '' : '.min') + g);
+    e = "javascript:(function(){var a=document.createElement('script');a.setAttribute('id','plugcubed-js');document.body.appendChild(a);a.setAttribute('src','http://" + (b == "stable" ? "colgate" : "tatdk") + ".github.com/plugCubed/compiled/plugCubed";
+    f = a === false ? 'An error occured, please try again later' : null;
+    g = ".js');}());";
+    if (a !== false) {
+        $("a." + b).attr("href",e + g);
+        $("a." + b + ".min").attr("href",e + (a === false ? '' : '.min') + g);
+    }
+    $("pre." + b).text(f === null ? e + g : f);
+    $("pre." + b + ".min").text(f !== null ? f : e + (a === false ? '' : '.min') + g);
     $("span." + b).text(a.normal !== undefined ? d(a.normal) : 'Unknown size');
     $("span." + b + ".min").text(a.min !== undefined ? d(a.min) + c : 'Unknown size');
 },d = function(a) { return (a/1024).toFixed(2) + ' KB'; };
@@ -36,20 +36,14 @@ var a = function(a,b) {
 $(document).ready(function() {
     setTimeout(function() {
         try {
-            $.ajax({
-				url: 'http://colgate.github.com/plugCubed/js/size.json',
-				type: 'get',
-				error: function() { a(false,'stable'); },
-				success: function(b) { a(b,'stable'); }
-			});
+            $.getJSON('http://colgate.github.com/plugCubed/js/size.json?callback=?',function(b) {
+                a(b,'stable');
+            }).error(function() { a(false,'stable'); });
         } catch (e) { a({},'stable'); }
         try {
-            $.ajax({
-				url: 'http://tatdk.github.com/plugCubed/js/size.json',
-				type: 'get',
-				error: function() { a(false,'dev'); },
-				success: function(b) { a(b,'dev'); }
-			});
+            $.getJSON('http://tatdk.github.com/plugCubed/js/size.json?callback=?',function(b) {
+                a(b,'dev');
+            }).error(function() { a(false,'dev'); });
         } catch (e) { a({},'dev'); }
     },50);
 });
