@@ -31,18 +31,18 @@ var a = function(a,b) {
     $("pre." + b + ".min").text(f !== null ? f : e + (a === false ? '' : '.min') + g);
     $("span." + b).text(a.normal !== undefined ? d(a.normal) : 'Unknown size');
     $("span." + b + ".min").text(a.min !== undefined ? d(a.min) + c : 'Unknown size');
-},d = function(a) { return (a/1024).toFixed(2) + ' KB'; },cb = function() {};
+},d = function(a) { return (a/1024).toFixed(2) + ' KB'; },cb = function(a) { size = a; },size = {};
 
 $(document).ready(function() {
     setTimeout(function() {
         try {
             $.getScript('http://colgate.github.com/plugCubed/js/size.json',function(b) {
-                a(b.trim().substr(3,b.trim().length-4),'stable');
+                a(size,'stable');
             }).error(function() { a(false,'stable'); });
         } catch (e) { a({},'stable'); }
         try {
             $.getScript('http://tatdk.github.com/plugCubed/js/size.json',function(b) {
-                a(b.trim().substr(3,b.trim().length-4),'dev');
+                a(size,'dev');
             }).error(function() { a(false,'dev'); });
         } catch (e) { a({},'dev'); }
     },50);
