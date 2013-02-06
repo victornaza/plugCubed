@@ -41,7 +41,7 @@ $(document).ready(function() {
             }).error(function() { a(false,'stable'); });
         } catch (e) { a({},'stable'); }
         try {
-            $.getScript('http://tatdk.github.com/plugCubed/js/size.json?callback=cb',function(b) {
+            $.getScript('http://tatdk.github.com/plugCubed/js/size.json',function(b) {
                 a(b.trim().substr(3,b.trim().length-4),'dev');
             }).error(function() { a(false,'dev'); });
         } catch (e) { a({},'dev'); }
