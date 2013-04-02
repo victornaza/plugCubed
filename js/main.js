@@ -20,7 +20,7 @@ var a = function(a,b) {
         h = a.normal-a.min;
         c = ' (' + (h/a.normal*100).toFixed(2) + '% saved)';
     }
-    e = "javascript:(function(){var a=document.createElement('script');a.setAttribute('id','plugcubed-js');document.body.appendChild(a);a.setAttribute('src','http://" + (b == "stable" ? "colgate" : "tatdk") + ".github.com/plugCubed/compiled/plugCubed";
+    e = "javascript:$.getScript('http://tatdk.github.com/plugCubed/compiled/plugCubed";
     f = a === false ? 'An error occured, please try again later' : null;
     g = ".js');}());";
     if (a !== false) {
@@ -36,14 +36,9 @@ var a = function(a,b) {
 $(document).ready(function() {
     setTimeout(function() {
         try {
-            $.getScript('http://colgate.github.com/plugCubed/js/size.json',function(b) {
+            $.getScript('http://tatdk.github.com/plugCubed/js/size.json',function(b) {
                 a(size,'stable');
             }).error(function() { a(false,'stable'); });
         } catch (e) { a({},'stable'); }
-        try {
-            $.getScript('http://tatdk.github.com/plugCubed/js/size.json',function(b) {
-                a(size,'dev');
-            }).error(function() { a(false,'dev'); });
-        } catch (e) { a({},'dev'); }
     },50);
 });
