@@ -22,7 +22,7 @@ var a = function(a,b) {
     }
     e = "javascript:$.getScript('http://tatdk.github.com/plugCubed/compiled/plugCubed";
     f = a === false ? 'An error occured, please try again later' : null;
-    g = ".js');}());";
+    g = ".js');";
     if (a !== false) {
         $("a." + b).attr("href",e + g);
         $("a." + b + ".min").attr("href",e + (a === false ? '' : '.min') + g);
