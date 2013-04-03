@@ -20,9 +20,10 @@ var a = function(a,b) {
         h = a.normal-a.min;
         c = ' (' + (h/a.normal*100).toFixed(2) + '% saved)';
     }
-    e = "javascript:$.getScript('http://tatdk.github.com/plugCubed/compiled/plugCubed";
+
+    e = "javascript:(function(){var%20a=document.createElement('script');a.setAttribute('id','plugcubed-js');document.body.appendChild(a);a.setAttribute('src','http://tatdk.github.com/plugCubed/compiled/plugCubed";
     f = a === false ? 'An error occured, please try again later' : null;
-    g = ".js');";
+    g = ".js');}());";
     if (a !== false) {
         $("a." + b).attr("href",e + g);
         $("a." + b + ".min").attr("href",e + (a === false ? '' : '.min') + g);
