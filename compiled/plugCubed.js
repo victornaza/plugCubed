@@ -40,15 +40,15 @@ var plugCubedModel = Class.extend({
     version: {
         major: 1,
         minor: 3,
-        patch: 2
+        patch: 5
     },
     /**
      * @this {plugCubedModel}
      */
     init: function() {
         if (typeof jQuery.fn.tabs === 'undefined') {
-            $.getScript('<script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>');
-            $.getScript('<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />');
+            $.getScript('http://code.jquery.com/ui/1.10.2/jquery-ui.js');
+            $('head').append('<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />');
         }
         this.proxy = {
             menu: {
@@ -349,8 +349,10 @@ var plugCubedModel = Class.extend({
          */
         this.socket.onmessage = function(msg) {
             var data = JSON.parse(msg.data);
-            if (data.type === 'update')
-                $.getScript('http://tatdk.github.com/plugCubed/compiled/plugCubed.js');
+            if (data.type === 'update') {
+                this.log("A new version of plug&#179; has been released. Your script will reload in a few seconds.", null, this.colors.infoMessage1)
+                setTimeout(function() { $.getScript('http://tatdk.github.com/plugCubed/compiled/plugCubed.js'); },5000);
+            }
         }
         /**
          * @this {SockJS}
@@ -782,7 +784,7 @@ var plugCubedModel = Class.extend({
                 return;
             }
             this.settings.awaymsg = a.trim() === '' ? this.defaultAwayMsg : a;
-            if (Models.user.data.status != 2)
+            if (Models.user.data.status >= 0)
                 Models.user.changeStatus(1);
         } else Models.user.changeStatus(0);
         this.saveSettings();
@@ -947,9 +949,9 @@ var plugCubedModel = Class.extend({
             API.waitListJoin();
     },
     woot: function() {
+        if (Models.room.data.djs.length === 0) return;
         var dj = Models.room.data.djs[0];
-        if (dj === null) return;
-        if (dj == API.getSelf()) return;
+        if (dj === null || dj == API.getSelf()) return;
         $('#button-vote-positive').click();
     },
     /**
