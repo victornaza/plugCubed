@@ -39,8 +39,8 @@ var plugCubedModel = Class.extend({
     },
     version: {
         major: 1,
-        minor: 3,
-        patch: 9
+        minor: 4,
+        patch: 0
     },
     /**
      * @this {plugCubedModel}
@@ -439,7 +439,9 @@ var plugCubedModel = Class.extend({
             join       : '3366FF',
             leave      : '3366FF',
             curate     : '00FF00'
-        }
+        },
+        registeredSongs: [],
+        autoMuted: false
     },
     /**
      * @this {plugCubedModel}
@@ -455,9 +457,17 @@ var plugCubedModel = Class.extend({
         if (this.settings.userlist) {
             this.populateUserlist();
             this.showUserlist();
-        }
+        };
         if (this.settings.customColors)
             this.updateCustomColors();
+        if (this.settings.registeredSongs.length > 0 && this.settings.registeredSongs.indexOf(Models.room.data.media.id) > -1) {
+            Playback.setVolume(0);
+            this.settings.autoMuted = true;
+            this.log(Models.room.data.media.title + " auto-muted.", null, this.colors.infoMessage2);
+
+        };
+
+
     },
     /**
      * @this {plugCubedModel}
@@ -786,7 +796,7 @@ var plugCubedModel = Class.extend({
             }
             a = a.split('@').join('').trim();
             this.settings.awaymsg = a === '' ? this.defaultAwayMsg : a;
-            if (Models.user.data.status >= 0)
+            if (Models.user.data.status <= 0)
                 Models.user.changeStatus(1);
         } else Models.user.changeStatus(0);
         this.saveSettings();
@@ -937,6 +947,16 @@ var plugCubedModel = Class.extend({
      */
     onDjAdvance: function(data) {
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
+        if(this.settings.autoMuted && this.settings.registeredSongs.indexOf(data.media.id) < 0){
+            setTimeout(function(){ Playback.setVolume(Playback.lastVolume) },800)
+            this.settings.autoMuted = false;
+        }
+        if(!this.settings.autoMuted && this.settings.registeredSongs.indexOf(data.media.id) > -1) {
+            setTimeout(function() { Playback.setVolume(0);}, 800)
+            this.settings.autoMuted = true;
+            this.log(data.media.title + " auto-muted.", null, this.colors.infoMessage2);
+
+        }
         this.onUserlistUpdate();
         var users = API.getUsers();
         for (var i in users)
@@ -946,9 +966,9 @@ var plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onDjAdvanceLate: function(data) {
-        if (this.settings.autowoot) this.woot();
+        if (this.settings.autowoot && this.settings.registeredSongs.indexOf(Models.room.data.media.id) < 0) this.woot();
         if ($("#button-dj-waitlist-join").css("display") === "block" && this.settings.autojoin)
-            API.waitListJoin();
+            Room.onWaitListJoinClick();
     },
     woot: function() {
         if (Models.room.data.djs.length === 0) return;
@@ -1051,6 +1071,7 @@ var plugCubedModel = Class.extend({
                 ['/leave','leaves dj booth/waitlist'],
                 ['/whoami','get your own information'],
                 ['/mute','set volume to 0'],
+                ['/automute', 'register currently playing song to automatically mute on future plays'],
                 ['/unmute','set volume to last volume'],
                 ['/woot','woots current song'],
                 ['/meh','mehs current song'],
@@ -1142,6 +1163,20 @@ var plugCubedModel = Class.extend({
             setTimeout(function() { Dialog.closeDialog(); },500);
             return true;
         }
+        if (value == '/nextsong') {
+            var a = Models.playlistMedia(Models.playlist.selectedPlaylistID).data[0];
+            return plugCubed.log("Your next queued song is " + a.title + " by " + a.author, null, plugCubed.colors.infoMessage1), true;
+        }
+        if (value == '/automute') {
+            if (plugCubed.settings.registeredSongs.indexOf(Models.room.data.media.id) < 0) {
+                plugCubed.settings.registeredSongs.push(Models.room.data.media.id);
+                plugCubed.settings.autoMuted = true;
+                Playback.setVolume(0);
+                plugCubed.log(Models.room.data.media.title + " registered to auto-mute on future plays.", null, plugCubed.colors.infoMessage2);
+                plugCubed.saveSettings();
+            }
+            return true;
+        }
         if (value == '/alertsoff') {
             if (plugCubed.settings.notify) {
                 plugCubed.log("Join/leave alerts disabled", null, plugCubed.colors.infoMessage1);
@@ -1184,16 +1219,16 @@ var plugCubedModel = Class.extend({
                 return plugCubed.getUserInfo(value.substr(7)),true;
         }
         if (Models.user.hasPermission(Models.user.BOUNCER)) {
-            if (value.indexOf('/whois ') === 0)
-                return plugCubed.getUserInfo(value.substr(7)),true;
             if (value.indexOf('/skip') === 0) {
                 var reason = value.substr(5).trim(),
-                    user = plugCubed.getUserInfo(Models.room.data.currentDJ);
+                    user = plugCubed.getUser(Models.room.data.currentDJ);
                 if (reason)
-                    API.sendChat((user === null ? '@' + user.username + ' ' : '') + 'Reason for skip: ' + reason);
+                    API.sendChat((user != null ? '@' + user.username + ' - ' : '') + 'Reason for skip: ' + reason);
                 new ModerationForceSkipService();
                 return true;
             }
+            if (value.indexOf('/whois ') === 0)
+                return plugCubed.getUserInfo(value.substr(7)),true;
             if (value.indexOf('/kick ') === 0)
                 return plugCubed.moderation(value.substr(6),'kick'),true;
             if (value.indexOf('/add ') === 0)
