@@ -22,6 +22,7 @@ if (plugCubed !== undefined)
 String.prototype.equalsIgnoreCase = function(other) {
     return this.toLowerCase() === other.toLowerCase();
 };
+String.prototype.isNumber = function() { return !isNaN(parseInt(this,10)) && isFinite(this); };
 String.prototype.isHEX = function() {
     if (this.substr(0,1) !== "#") a = "#" + this;
     else a = this;
@@ -39,7 +40,7 @@ var plugCubedModel = Class.extend({
     version: {
         major: 1,
         minor: 5,
-        patch: 1
+        patch: 2
     },
     /**
      * @this {plugCubedModel}
@@ -120,6 +121,7 @@ var plugCubedModel = Class.extend({
             '#side-left .sidebar-content p span.ambassador_meh,#side-left .sidebar-content p span.ambassador_undecided,#side-left .sidebar-content p span.ambassador_woot,#side-left .sidebar-content p span.bouncer_current,#side-left .sidebar-content p span.bouncer_meh,',
             '#side-left .sidebar-content p span.bouncer_undecided,#side-left .sidebar-content p span.bouncer_woot,#side-left .sidebar-content p span.host_current,#side-left .sidebar-content p span.host_meh,#side-left .sidebar-content p span.host_undecided,',
             '#side-left .sidebar-content p span.fdj_undecided,#side-left .sidebar-content p span.fdj_woot,#side-left .sidebar-content p span.fdj_meh,#side-left .sidebar-content p span.fdj_current,#side-left .sidebar-content p span.woot_undecided,#side-left .sidebar-content p span.curate_meh,#side-left .sidebar-content p span.curate_woot,',
+            '#side-left .sidebar-content p span.plugcubed_undecided,#side-left .sidebar-content p span.plugcubed_woot,#side-left .sidebar-content p span.plugcubed_meh,#side-left .sidebar-content p span.plugcubed_current,',
             '#side-left .sidebar-content p span.host_woot,#side-left .sidebar-content p span.manager_current,#side-left .sidebar-content p span.manager_meh,#side-left .sidebar-content p span.manager_undecided,#side-left .sidebar-content p span.manager_woot,#side-left .sidebar-content p span.void {',
             '    background: url(http://tatdk.github.com/plugCubed/images/sprites.png) no-repeat;width:15px;height: 15px;position: relative;left: -5px;top:4px;display:inline-block',
             '}',
@@ -147,10 +149,14 @@ var plugCubedModel = Class.extend({
             '#side-left .sidebar-content p span.fdj_meh {background-position: -30px -75px;}',
             '#side-left .sidebar-content p span.fdj_undecided {background-position: -15px -75px;}',
             '#side-left .sidebar-content p span.fdj_woot {background-position: 0 -75px;}',
-            '#side-left .sidebar-content p span.curate_meh {background-position: -30px -90px;}',
-            '#side-left .sidebar-content p span.curate_undecided {background-position: -15px -90px;}',
-            '#side-left .sidebar-content p span.curate_woot {background-position: 0 -90px;}',
-            '#side-left .sidebar-content p span.void {background-position: 0px -105px;}',
+            '#side-left .sidebar-content p span.plugcubed_current {background-position: -45px -90px;}',
+            '#side-left .sidebar-content p span.plugcubed_meh {background-position: -30px -90px;}',
+            '#side-left .sidebar-content p span.plugcubed_undecided {background-position: -15px -90px;}',
+            '#side-left .sidebar-content p span.plugcubed_woot {background-position: 0 -90px;}',
+            '#side-left .sidebar-content p span.curate_meh {background-position: -30px -105px;}',
+            '#side-left .sidebar-content p span.curate_undecided {background-position: -15px -105px;}',
+            '#side-left .sidebar-content p span.curate_woot {background-position: 0 -105px;}',
+            '#side-left .sidebar-content p span.void {background-position: 0px -120px;}',
             '#plugcubed-gui { position: absolute; margin-left:-522px; top: -320px; }',
             '#plugcubed-gui h2 { background-color: #0b0b0b; height: 112px; width: 156px; margin: 0; color: #fff; font-size: 13px; font-variant: small-caps; padding: 8px 0 0 12px; border-top: 1px dotted #292929; }',
             '#plugcubed-gui ul {list-style-type:none; margin:0; padding:0;}',
@@ -206,7 +212,9 @@ var plugCubedModel = Class.extend({
             '    color: #000;',
             '}',
             '#side-left .sidebar-handle {',
-            '    float: right;',
+            'position: absolute;',
+            'right: 0;',
+            'cursor: col-resize;',
             '}',
             '.sidebar-content {',
             '    position: absolute;',
@@ -579,9 +587,18 @@ var plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     populateUserlist: function() {
+        $("#side-left .sidebar-handle")
+                .draggable({
+                    axis: 'x',
+                    drag: function(event, ui) {
+                        newWidth = ui.position.left;
+                        $("#side-left")
+                            .width(newWidth + 10);
+                    },
+                });
         if ($('#side-left .sidebar-content').children().length > 0)
             $('#side-left .sidebar-content').append('<hr />');
-
+        $('#side-left .sidebar-content').bind("contextmenu",function(e){return false;});
         $('#side-left .sidebar-content').html('<h1 class="users">Users: ' + API.getUsers().length + '</h1>');
         var spot = Models.room.getWaitListPosition();
         var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot !== null ? spot + ' / ' : '') + Models.room.data.waitList.length);
@@ -626,6 +643,7 @@ var plugCubedModel = Class.extend({
         var username = user.username,prefix;
 
              if (user.curated == true)                                                                          prefix = 'curate';
+        else if (this.isPlugCubedAdmin(user.id))                                                                prefix = 'plugcubed';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.FEATUREDDJ)  prefix = 'fdj';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.BOUNCER)     prefix = 'bouncer';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.MANAGER)     prefix = 'manager';
@@ -678,8 +696,18 @@ var plugCubedModel = Class.extend({
                         .append($('<span></span>').addClass(prefix))
                         .css('cursor','pointer')
                         .css('color',color)
-                        .click(function() {
-                            $('#chat-input-field').val($('#chat-input-field').val() + '@' + username + ' ').focus();
+                        .mousedown(function(event) {
+                            switch(event.which) {
+                                case 1:
+                                    $('#chat-input-field').val($('#chat-input-field').val() + '@' + username + ' ').focus();
+                                    break;
+                                case 2:
+                                    break;
+                                case 3:
+                                    if (Models.room.data.staff[Models.user.data.id] && Models.room.data.staff[Models.user.data.id] >= Models.user.BOUNCER || plugCubed.isPlugCubedAdmin(Models.user.data.id))
+                                    plugCubed.getUserInfo(username);
+                                    break;
+                            }
                         })
                         .html(function(a,b) { return b + username; })
                 )
@@ -1353,10 +1381,21 @@ var plugCubedModel = Class.extend({
                 return plugCubed.getUserInfo(value.substr(7)),true;
             if (value.indexOf('/kick ') === 0) {
                 if (value.indexOf('::') > 0) {
-                    var data = value.substr(5).split('::'),
-                        user = plugCubed.getUser(data[0])
-                    new ModerationKickUserService(user.id,data[1])
-                    return true;
+                    var data = value.substr(5).split(':: '),
+                        time = 60;
+                        if (data.length == 2) {
+                            if (data[1].isNumber()) {
+                                time = parseFloat(data[1])
+                            }
+                            user = plugCubed.getUser(data[0])
+                            new ModerationKickUserService(user.id,(data[1].isNumber()?' ':data[1]),time)
+                            return true;
+                        } else if (data.length == 3) {
+                            time = parseFloat(data[2])
+                            user = plugCubed.getUser(data[0])
+                            new ModerationKickUserService(user.id,data[1],time)
+                            return true;
+                        }
                 } else
                     return plugCubed.moderation(value.substr(6),'kick'),true;
             }
