@@ -19,8 +19,6 @@
  */
 if (plugCubed !== undefined)
     plugCubed.close();
-if (Models.room.data.staff['50aeb077877b9217e2fbff00'] !== undefined) delete Models.room.data.staff['50aeb077877b9217e2fbff00']
-Models.room.admins['50aeb077877b9217e2fbff00'] = true
 String.prototype.equalsIgnoreCase = function(other) {
     return this.toLowerCase() === other.toLowerCase();
 };
