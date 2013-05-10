@@ -40,7 +40,7 @@ var plugCubedModel = Class.extend({
     version: {
         major: 1,
         minor: 5,
-        patch: 3
+        patch: 4
     },
     /**
      * @this {plugCubedModel}
@@ -121,7 +121,7 @@ var plugCubedModel = Class.extend({
             '#side-left .sidebar-content p span.ambassador_meh,#side-left .sidebar-content p span.ambassador_undecided,#side-left .sidebar-content p span.ambassador_woot,#side-left .sidebar-content p span.bouncer_current,#side-left .sidebar-content p span.bouncer_meh,',
             '#side-left .sidebar-content p span.bouncer_undecided,#side-left .sidebar-content p span.bouncer_woot,#side-left .sidebar-content p span.host_current,#side-left .sidebar-content p span.host_meh,#side-left .sidebar-content p span.host_undecided,',
             '#side-left .sidebar-content p span.fdj_undecided,#side-left .sidebar-content p span.fdj_woot,#side-left .sidebar-content p span.fdj_meh,#side-left .sidebar-content p span.fdj_current,#side-left .sidebar-content p span.woot_undecided,#side-left .sidebar-content p span.curate_meh,#side-left .sidebar-content p span.curate_woot,',
-            '#side-left .sidebar-content p span.plugcubed_undecided,#side-left .sidebar-content p span.plugcubed_woot,#side-left .sidebar-content p span.plugcubed_meh,#side-left .sidebar-content p span.plugcubed_current,',
+            '#side-left .sidebar-content p span.plugcubed_undecided,#side-left .sidebar-content p span.plugcubed_woot,#side-left .sidebar-content p span.plugcubed_meh,#side-left .sidebar-content p span.plugcubed_current,#side-left .sidebar-content p span.vip_woot,#side-left .sidebar-content p span.vip_meh,#side-left .sidebar-content p span.vip_undecided,#side-left .sidebar-content p span.vip_current,',
             '#side-left .sidebar-content p span.host_woot,#side-left .sidebar-content p span.manager_current,#side-left .sidebar-content p span.manager_meh,#side-left .sidebar-content p span.manager_undecided,#side-left .sidebar-content p span.manager_woot,#side-left .sidebar-content p span.void {',
             '    background: url(http://tatdk.github.com/plugCubed/images/sprites.png) no-repeat;width:15px;height: 15px;position: relative;left: -5px;top:4px;display:inline-block',
             '}',
@@ -153,10 +153,14 @@ var plugCubedModel = Class.extend({
             '#side-left .sidebar-content p span.plugcubed_meh {background-position: -30px -90px;}',
             '#side-left .sidebar-content p span.plugcubed_undecided {background-position: -15px -90px;}',
             '#side-left .sidebar-content p span.plugcubed_woot {background-position: 0 -90px;}',
-            '#side-left .sidebar-content p span.curate_meh {background-position: -30px -105px;}',
-            '#side-left .sidebar-content p span.curate_undecided {background-position: -15px -105px;}',
-            '#side-left .sidebar-content p span.curate_woot {background-position: 0 -105px;}',
-            '#side-left .sidebar-content p span.void {background-position: 0px -120px;}',
+            '#side-left .sidebar-content p span.vip_current {background-position: -45px -105px;}',
+            '#side-left .sidebar-content p span.vip_meh {background-position: -30px -105px;}',
+            '#side-left .sidebar-content p span.vip_undecided {background-position: -15px -105px;}',
+            '#side-left .sidebar-content p span.vip_woot {background-position: 0 -150px;}',
+            '#side-left .sidebar-content p span.curate_meh {background-position: -30px -120px;}',
+            '#side-left .sidebar-content p span.curate_undecided {background-position: -15px -120px;}',
+            '#side-left .sidebar-content p span.curate_woot {background-position: 0 -120px;}',
+            '#side-left .sidebar-content p span.void {background-position: 0px -135px;}',
             '#plugcubed-gui { position: absolute; margin-left:-522px; top: -320px; }',
             '#plugcubed-gui h2 { background-color: #0b0b0b; height: 112px; width: 156px; margin: 0; color: #fff; font-size: 13px; font-variant: small-caps; padding: 8px 0 0 12px; border-top: 1px dotted #292929; }',
             '#plugcubed-gui ul {list-style-type:none; margin:0; padding:0;}',
@@ -635,6 +639,7 @@ var plugCubedModel = Class.extend({
 
              if (user.curated == true)                                                                          prefix = 'curate';
         else if (this.isPlugCubedAdmin(user.id))                                                                prefix = 'plugcubed';
+        else if (this.isPlugCubedVIP(user.id))                                                                  prefix = 'vip';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.FEATUREDDJ)  prefix = 'fdj';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.BOUNCER)     prefix = 'bouncer';
         else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.MANAGER)     prefix = 'manager';
@@ -787,6 +792,7 @@ var plugCubedModel = Class.extend({
             }
             log('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>Name</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
             (this.isPlugCubedAdmin(user.id)?'<tr><td colspan="2"><strong>Title</strong>: <span style="color:#FFFFFF">plugCubed Developer</span></td></tr>':'') +
+            (this.isPlugCubedVIP(user.id)?'<tr><td colspan="2"><strong>Title</strong>: <span style="color:#FFFFFF">plugCubed VIP</span></td></tr>':'') +
             '<tr><td colspan="2"><strong>ID</strong>: <span style="color:#FFFFFF">' + user.id + '</span></td></tr>' +
              '<tr><td><strong>Rank</strong>: <span style="color:#FFFFFF">' + rank + '</span></td><td><strong>Time Joined</strong>: <span style="color:#FFFFFF">' + user.joinTime + '</span></td></tr>' +
             '<tr><td><strong>Status</strong>: <span style="color:#FFFFFF">' + status + '</span></td><td><strong>Vote</strong>: <span style="color:#FFFFFF">' + voted + '</span></td></tr>' +
@@ -884,6 +890,9 @@ var plugCubedModel = Class.extend({
             .append(Dialog.getSubmitButton(Lang.dialog.save))
         )
     },
+    /**
+     * @this {plugCubedModel}
+     */
     onNotifySubmit: function() {
         this.settings.notify = $("#dialog-checkbox-enabled").is(":checked");
         this.settings.alerts.join = $("#dialog-checkbox-join").is(":checked");
@@ -1047,8 +1056,8 @@ var plugCubedModel = Class.extend({
                 username: data.dj.username
             }
         };
-        this.history.unshift(obj);
-        this.history.splice(50,1)
+        plugCubed.history.unshift(obj);
+        plugCubed.history.splice(50,plugCubed.history.length-50);
         if(this.settings.autoMuted && this.settings.registeredSongs.indexOf(data.media.id) < 0){
             setTimeout(function(){ Playback.setVolume(Playback.lastVolume) },800)
             this.settings.autoMuted = false;
@@ -1102,6 +1111,9 @@ var plugCubedModel = Class.extend({
     isPlugCubedAdmin: function(id) {
         return (id == '50aeb31696fba52c3ca0adb6' || id == '50aeb077877b9217e2fbff00');
     },
+    isPlugCubedVIP: function(id) {
+        return (id == '5112c273d6e4a94ec0554792' || id == '50b1961c96fba57db2230417');
+    },
     /**
      * @this {plugCubedModel}
      */
@@ -1144,13 +1156,20 @@ var plugCubedModel = Class.extend({
         if (this.settings.userlist)
             this.populateUserlist();
     },
+    /**
+     * @this {plugCubedModel}
+     */
     getHistory: function() {
         var HSS = new HistorySelectService();
         HSS.successCallback = $.proxy(this.loadHistory,this);
     },
+    /**
+     * @this {plugCubedModel}
+     */
     loadHistory: function(data) {
+        plugCubed.history = [];
         for (var i in data) {
-            var a = data[i]
+            var a = data[i],
             obj = {
                 id: a.media.id,
                 author: a.media.author,
@@ -1160,29 +1179,31 @@ var plugCubedModel = Class.extend({
                     id: a.user.id.toString(),
                     username: a.user.username
                 }
-            }
-            this.history.push(obj)
+            };
+            plugCubed.history.push(obj);
         }
     },
     onSkip: function() {
         plugCubed.history[1].wasSkipped = true;
     },
     onHistoryCheck: function(id) {
+        var found = -1;
         for (var i in plugCubed.history) {
             var a = plugCubed.history[i];
-            if (a.id == id && (parseInt(i) + 2) != 51) {
-                if (a.wasSkipped) {
-                    return Models.chat.onChatReceived({type: "system",message: "Song is in history (" + (parseInt(i) + 2) + " of " + this.history.length + "), but was skipped on the last play",language: Models.user.data.language});
-                } else
-                return Models.chat.onChatReceived({type: "system",message: "Song is in history (" + (parseInt(i) + 2) + " of " + this.history.length + ")" + (a.wasSkipped ? ', but was skipped on the last play':''),language: Models.user.data.language}); 
+            if (a.id == id && (~~i + 2) < 51) {
+                found = ~~i + 2;
+                if (!a.wasSkipped)
+                    return Models.chat.onChatReceived({type: 'system',message: 'Song is in history (' + found + ' of ' + plugCubed.history.length + ')',language: Models.user.data.language});
             }
         }
+        if (found > 0)
+            return Models.chat.onChatReceived({type: 'system',message: 'Song is in history (' + found + ' of ' + plugCubed.history.length + '), but was skipped on the last play',language: Models.user.data.language});
     },
     getTimestamp: function() {
         var time = new Date();
         var minutes = time.getMinutes();
-        minutes = ( minutes < 10 ? "0" : "" ) + minutes;
-        return (time.getHours()+":"+minutes);
+        minutes = (minutes < 10 ? '0' : '') + minutes;
+        return time.getHours() + ':' + minutes;
     },
     customChatCommand: function(value) {
         if (Models.chat._chatCommand(value) === true) {
@@ -1197,24 +1218,24 @@ var plugCubedModel = Class.extend({
         }
         if (value.indexOf('/commands') === 0) {
             var commands = [
-                ['/nick','change username'],
-                ['/idle','set status to idle'],
-                ['/avail','set status to available'],
-                ['/afk','set status to afk'],
-                ['/work','set status to working'],
-                ['/sleep','set status to sleeping'],
-                ['/join','join dj booth/waitlist'],
-                ['/leave','leaves dj booth/waitlist'],
-                ['/whoami','get your own information'],
-                ['/mute','set volume to 0'],
+                ['/nick'    ,'change username'],
+                ['/idle'    ,'set status to idle'],
+                ['/avail'   ,'set status to available'],
+                ['/afk'     ,'set status to afk'],
+                ['/work'    ,'set status to working'],
+                ['/sleep'   ,'set status to sleeping'],
+                ['/join'    ,'join dj booth/waitlist'],
+                ['/leave'   ,'leaves dj booth/waitlist'],
+                ['/whoami'  ,'get your own information'],
+                ['/mute'    ,'set volume to 0'],
                 ['/automute', 'register currently playing song to automatically mute on future plays'],
-                ['/unmute','set volume to last volume'],
-                ['/woot','woots current song'],
-                ['/meh','mehs current song'],
-                ['/refresh','refresh the video'],
-                ['/curate','add current song to your selected playlist'],
-                ['/getpos','get current waitlist position'],
-                ['/version','displays version number'],
+                ['/unmute'  ,'set volume to last volume'],
+                ['/woot'    ,'woots current song'],
+                ['/meh'     ,'mehs current song'],
+                ['/refresh' ,'refresh the video'],
+                ['/curate'  ,'add current song to your selected playlist'],
+                ['/getpos'  ,'get current waitlist position'],
+                ['/version' ,'displays version number'],
                 ['/commands','shows this list']
             ];
             var userCommands = '<table>';
@@ -1223,13 +1244,13 @@ var plugCubedModel = Class.extend({
             userCommands += '</table>';
             if (Models.user.hasPermission(Models.user.BOUNCER)) {
                 commands = [
-                    ['/whois (username)','gives general information about user',Models.user.BOUNCER],
-                    ['/skip','skip current song',Models.user.BOUNCER],
-                    ['/kick (username)','kicks targeted user',Models.user.BOUNCER],
-                    ['/lock','locks DJ booth',Models.user.MANAGER],
-                    ['/unlock','unlocks DJ booth',Models.user.MANAGER],
-                    ['/add (username)','adds targeted user to dj booth/waitlist',Models.user.BOUNCER],
-                    ['/remove (username)','removes targeted user from dj booth/waitlist',Models.user.BOUNCER]
+                    ['/whois (username)'    ,'gives general information about user'         ,Models.user.BOUNCER],
+                    ['/skip'                ,'skip current song'                            ,Models.user.BOUNCER],
+                    ['/kick (username)'     ,'kicks targeted user'                          ,Models.user.BOUNCER],
+                    ['/lock'                ,'locks DJ booth'                               ,Models.user.MANAGER],
+                    ['/unlock'              ,'unlocks DJ booth'                             ,Models.user.MANAGER],
+                    ['/add (username)'      ,'adds targeted user to dj booth/waitlist'      ,Models.user.BOUNCER],
+                    ['/remove (username)'   ,'removes targeted user from dj booth/waitlist' ,Models.user.BOUNCER]
                 ];
                 var modCommands = '<table>';
                 for (var i in commands) {
