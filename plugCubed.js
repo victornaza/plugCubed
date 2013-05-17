@@ -170,6 +170,16 @@ plugCubedModel = Class.extend({
         }
 
         SocketListener.chat = function(a) { if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1) return; Models.chat.receive(a); API.delayDispatch(API.CHAT,a); }
+        if (!EXT) EXT = {};
+        if (!EXT.onRoomJoined) EXT.onRoomJoined = function() { console.log('Detected roomChange'); $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); };
+        else {
+            if (!EXT._onRoomJoined) EXT._onRoomJoined = EXT.onRoomJoined;
+            EXT.onRoomJoined = function() {
+                console.log('Detected roomChange');
+                $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js');
+                EXT._onRoomJoined();
+            };
+        }
     },
     /**
      * @this {plugCubedModel}
