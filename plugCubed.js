@@ -150,7 +150,7 @@ plugCubedModel = Class.extend({
             if (data.type === 'update') {
                 plugCubed.socket.onclose = function() {};
                 plugCubed.socket.close();
-                plugCubed.log('A new version of plug&#179; has been released. Your script will reload in a few seconds.', null, plugCubed.colors.infoMessage1)
+                plugCubed.log('A new version of plug&#179; has been released. Your script will reload in a few seconds.', null, plugCubed.colors.infoMessage1);
                 setTimeout(function() { $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); },5000);
             }
         }
@@ -171,12 +171,19 @@ plugCubedModel = Class.extend({
 
         SocketListener.chat = function(a) { if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1) return; Models.chat.receive(a); API.delayDispatch(API.CHAT,a); }
         if (!EXT) EXT = {};
-        if (!EXT.onRoomJoined) EXT.onRoomJoined = function() { console.log('Detected roomChange'); $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); };
+        if (!EXT.onRoomJoined) EXT.onRoomJoined = function() {
+            if (typeof plugCubed !== 'undefined') {
+                plugCubed.close();
+                plugCubed = new plugCubedModel();
+            }
+        };
         else {
             if (!EXT._onRoomJoined) EXT._onRoomJoined = EXT.onRoomJoined;
             EXT.onRoomJoined = function() {
-                console.log('Detected roomChange');
-                $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js');
+                if (typeof plugCubed !== 'undefined') {
+                    plugCubed.close();
+                    plugCubed = new plugCubedModel();
+                }
                 EXT._onRoomJoined();
             };
         }
