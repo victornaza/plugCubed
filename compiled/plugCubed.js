@@ -40,7 +40,7 @@ plugCubedModel = Class.extend({
     version: {
         major: 1,
         minor: 6,
-        patch: 0
+        patch: 1
     },
     /**
      * @this {plugCubedModel}
@@ -198,6 +198,7 @@ plugCubedModel = Class.extend({
         $('#side-right').remove();
         $('#side-left').remove();
         this.customColorsStyle.remove();
+        this.socket.onclose = function() {};
         this.socket.close();
         delete plugCubed;
     },
