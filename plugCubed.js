@@ -92,7 +92,7 @@ plugCubedModel = Class.extend({
         this.log('Use \'/commands\' to see expanded chat commands.', null, this.colors.infoMessage2);
 
         /**
-         * @this {plugCubedModel}
+         * @this {Dialog}
          */
         Dialog.showPlugCubedCommands = function(user,mod) {
             this.closeDialog();
@@ -103,6 +103,41 @@ plugCubedModel = Class.extend({
             .width(width+25).height(470).append(this.getHeader('plug&#179; Commands')).append($('<div/>').addClass('dialog-body')
             .append(this.getMessage(content).width(width))));
             $('#plugCubedCommands').tabs();
+        };
+
+        /**
+         * @this {Lobby}
+         */
+        Lobby.onRoomSelectResponse = function(a) {
+            this.spin(false);
+            this.pendingLoad = false;
+            var b = this.data.length;
+            this.lastCursor = a.cursor;
+            if (0 == a.results.length) this.endOfList = true;
+            else if ((this.data = this.data.concat(a.results)) && 0 < this.data.length) {
+                this.roomList || (this.roomList = $("<ul/>").addClass("room-list"));
+                for (var a = this.data.length, c = b; c < a; ++c) {
+                    var d = this.data[c],
+                        e = $("<div/>").addClass("room-population").append($("<span/>").addClass("room-population-value").text(d.userCount)).append($("<span/>").addClass("room-population-label").html(Lang.lobby.population)),
+                        f = $("<div/>").addClass("meta").append($("<span/>").addClass("room-name").text(d.name)).append($("<span/>").addClass("room-hosted-by").text(Lang.lobby.hostedBy)).append($("<span/>").addClass("room-host-name").text(d.host));
+                    d.media && f.append($("<span/>").addClass("room-now-playing").text(Lang.lobby.nowPlaying)).append($("<span/>").addClass("room-media").text(d.media));
+                    var g = $("<div/>").addClass("room-djs");
+                    if (5 > d.djCount) {
+                        var h;
+                        h = 4 == d.djCount ? Lang.lobby.slotAvailable : Lang.lobby.slotsAvailable.split("%COUNT%").join("" + (5 - d.djCount));
+                        g.append($("<span/>").addClass("room-djs-label").text(h))
+                    } else g.append($("<span/>").addClass("room-djs-label").text(Lang.lobby.noSlots));
+                    f.append(g);
+                    d.friends && 0 < d.friends.length && d.userCount &&
+                        (g = 1 == d.friends.length ? Lang.lobby.friendInHere : Lang.lobby.friendsInHere.split("%COUNT%").join("" + d.friends.length), f.append($("<div/>").addClass("room-friends").append($("<span/>").addClass("room-friends-label").text(g)).attr("title", d.friends.join(", "))));
+                    d = $("<li/>").addClass("room-list-item").data("index", c).data("room", d).mouseenter($.proxy(this.onRoomOver, this)).mouseleave($.proxy(this.onRoomOut, this)).click($.proxy(this.onRoomClick, this)).append(e).append(f);
+                    1 == c % 2 ? d.addClass("alternate-cell") :
+                        d.removeClass("alternate-cell");
+                    this.roomList.append(d)
+                }
+                0 == b && this.lobbyPanelList.append(this.roomList);
+                this.posLobbyLabels()
+            } else Dialog.alert(Lang.alerts.roomNotFound)
         };
 
         if (Models.chat._chatCommand === undefined)
