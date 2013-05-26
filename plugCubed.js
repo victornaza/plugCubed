@@ -168,6 +168,59 @@ plugCubedModel = Class.extend({
             if (a.curVote   === undefined) a.curVote   = 0;
             if (a.joinTime  === undefined) a.joinTime  = this.getTimestamp();
         }
+
+        SocketListener.chat = function(a) { if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1) return; Models.chat.receive(a); API.delayDispatch(API.CHAT,a); }
+        if (!EXT) EXT = {};
+        if (!EXT.onRoomJoined) EXT.onRoomJoined = function() {
+            if (typeof plugCubed !== 'undefined') {
+                plugCubed.close();
+                plugCubed = new plugCubedModel();
+            }
+        };
+        else {
+            if (!EXT._onRoomJoined) EXT._onRoomJoined = EXT.onRoomJoined;
+            EXT.onRoomJoined = function() {
+                if (typeof plugCubed !== 'undefined') {
+                    plugCubed.close();
+                    plugCubed = new plugCubedModel();
+                }
+                EXT._onRoomJoined();
+            };
+        }
+        this.Socket();
+    },
+    /**
+     * @this {plugCubedModel}
+     */
+    close: function() {
+        Models.chat.chatCommand = Models.chat._chatCommand;
+        ChatModel.chatCommand = ChatModel._chatCommand;
+        API.removeEventListener(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
+        API.removeEventListener(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
+        API.removeEventListener(API.CURATE_UPDATE,    this.proxy.onCurate);
+        API.removeEventListener(API.USER_JOIN,        this.proxy.onUserJoin);
+        API.removeEventListener(API.USER_LEAVE,       this.proxy.onUserLeave);
+        API.removeEventListener(API.CHAT,             this.proxy.onChat);
+        API.removeEventListener(API.VOTE_SKIP,        this.proxy.onSkip);
+        API.removeEventListener(API.USER_SKIP,        this.proxy.onSkip);
+        API.removeEventListener(API.MOD_SKIP,         this.proxy.onSkip);
+        API.removeEventListener(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
+        API.removeEventListener('userUpdate',         this.proxy.onUserlistUpdate);
+        for (var i in plugCubed.guiButtons) {
+            if (i === undefined || plugCubed.guiButtons[i] === undefined) continue;
+            $('#plugcubed-btn-' + i).unbind();
+            delete plugCubed.guiButtons[i];
+        }
+        $('#plugcubed-css').remove();
+        $('#plugcubed-js-extra').remove();
+        $('#side-right').remove();
+        $('#side-left').remove();
+        this.customColorsStyle.remove();
+        this.socket.onclose = function() {};
+        this.socket.close();
+        delete plugCubed;
+    },
+    Socket: function() {
         this.socket = new SockJS('http://socket.plugpony.net:923/gateway');
         this.socket.tries = 0;
         /**
@@ -205,58 +258,8 @@ plugCubedModel = Class.extend({
             else if (this.tries < 60) delay = 60;
             else                      return;
 
-            setTimeout(function() { plugCubed.socket = new SockJS('http://socket.plugpony.net:923/gateway'); },delay*1E3);
+            setTimeout(function() { plugCubed.Socket(); },delay*1E3);
         }
-
-        SocketListener.chat = function(a) { if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1) return; Models.chat.receive(a); API.delayDispatch(API.CHAT,a); }
-        if (!EXT) EXT = {};
-        if (!EXT.onRoomJoined) EXT.onRoomJoined = function() {
-            if (typeof plugCubed !== 'undefined') {
-                plugCubed.close();
-                plugCubed = new plugCubedModel();
-            }
-        };
-        else {
-            if (!EXT._onRoomJoined) EXT._onRoomJoined = EXT.onRoomJoined;
-            EXT.onRoomJoined = function() {
-                if (typeof plugCubed !== 'undefined') {
-                    plugCubed.close();
-                    plugCubed = new plugCubedModel();
-                }
-                EXT._onRoomJoined();
-            };
-        }
-    },
-    /**
-     * @this {plugCubedModel}
-     */
-    close: function() {
-        Models.chat.chatCommand = Models.chat._chatCommand;
-        ChatModel.chatCommand = ChatModel._chatCommand;
-        API.removeEventListener(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
-        API.removeEventListener(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
-        API.removeEventListener(API.CURATE_UPDATE,    this.proxy.onCurate);
-        API.removeEventListener(API.USER_JOIN,        this.proxy.onUserJoin);
-        API.removeEventListener(API.USER_LEAVE,       this.proxy.onUserLeave);
-        API.removeEventListener(API.CHAT,             this.proxy.onChat);
-        API.removeEventListener(API.VOTE_SKIP,        this.proxy.onSkip);
-        API.removeEventListener(API.USER_SKIP,        this.proxy.onSkip);
-        API.removeEventListener(API.MOD_SKIP,         this.proxy.onSkip);
-        API.removeEventListener(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
-        API.removeEventListener('userUpdate',         this.proxy.onUserlistUpdate);
-        for (var i in plugCubed.guiButtons) {
-            if (i === undefined || plugCubed.guiButtons[i] === undefined) continue;
-            $('#plugcubed-btn-' + i).unbind();
-            delete plugCubed.guiButtons[i];
-        }
-        $('#plugcubed-css').remove();
-        $('#plugcubed-js-extra').remove();
-        $('#side-right').remove();
-        $('#side-left').remove();
-        this.customColorsStyle.remove();
-        this.socket.onclose = function() {};
-        this.socket.close();
-        delete plugCubed;
     },
     /**
      * @this {plugCubedModel}
@@ -950,7 +953,7 @@ plugCubedModel = Class.extend({
             Room.onWaitListJoinClick();
     },
     woot: function() {
-        if (Models.room.data.djs.length === 0) return;
+        if (Models.room.data.djs === undefined || Models.room.data.djs.length === 0) return;
         var dj = Models.room.data.djs[0];
         if (dj === null || dj == API.getSelf()) return;
         $('#button-vote-positive').click();
