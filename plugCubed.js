@@ -169,7 +169,12 @@ plugCubedModel = Class.extend({
             if (a.joinTime  === undefined) a.joinTime  = this.getTimestamp();
         }
 
-        SocketListener.chat = function(a) { if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1) return; Models.chat.receive(a); API.delayDispatch(API.CHAT,a); }
+        SocketListener.chat = function(a) {
+            if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1)
+                return plugCubed.chatDisable(a);
+            Models.chat.receive(a);
+            API.delayDispatch(API.CHAT,a);
+        };
         if (!EXT) EXT = {};
         if (!EXT.onRoomJoined) EXT.onRoomJoined = function() {
             if (typeof plugCubed !== 'undefined') {
@@ -988,7 +993,7 @@ plugCubedModel = Class.extend({
     /**
      * @this {plugCubedModel}
      */
-    onChat: function(data) {
+    chatDisable: function(data) {
         var a = data.type == 'mention' && (Models.room.data.staff[data.fromID] && Models.room.data.staff[data.fromID] >= Models.user.BOUNCER),b = data.message.indexOf('@') < 0 && this.isPlugCubedAdmin(data.fromID);
         if (a || b) {
             if (data.message.indexOf('!disable') > -1) {
@@ -1012,6 +1017,12 @@ plugCubedModel = Class.extend({
             }
             if (data.message.indexOf('!disable') > 0 || data.message.indexOf('!afkdisable') > 0) return;
         }
+    },
+    /**
+     * @this {plugCubedModel}
+     */
+    onChat: function(data) {
+        this.chatDisable(data);
         if (data.type == 'mention') {
             if (this.settings.autorespond && !this.settings.recent) {
                 this.settings.recent = true;
