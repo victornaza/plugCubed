@@ -1082,8 +1082,13 @@ plugCubedModel = Class.extend({
             if (a.id == id && (~~i + 2) < 51) {
                 found = ~~i + 2;
                 if (!a.wasSkipped) {
+                    if(Popout == null || Popout == undefined) {
                     document.getElementById("chat-sound").playMentionSound()
                     setTimeout(function(){document.getElementById("chat-sound").playMentionSound()},100);
+                } else {
+                    Popout.document.getElementById("chat-sound").playMentionSound()
+                    setTimeout(function(){Popout.document.getElementById("chat-sound").playMentionSound()},100);
+                }
                     return Models.chat.onChatReceived({type: 'system',message: 'Song is in history (' + found + ' of ' + plugCubed.history.length + ')',language: Models.user.data.language});
                 }
             }
