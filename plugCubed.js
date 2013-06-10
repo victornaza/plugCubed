@@ -29,9 +29,16 @@ console.info = function(data) {
     if (_PCL !== undefined) {
         log('<span style="color:#FF0000">Disconnected at ' + plugCubed.getTimestamp() + '! Reloading the page in a few seconds.</span>');
         setTimeout(function() { location.reload(true); },3E3);
-    } else log('<span style="color:#FF0000">Disconnected at ' + plugCubed.getTimestamp() + '! </span>');
+    } else {
+        if (!disconnected) {
+            disconnected = true;
+            log('<span style="color:#FF0000">Disconnected at ' + plugCubed.getTimestamp() + '! </span>');
+        }
+    }
+
 };
 var _PCL,
+disconnected = false,
 plugCubedModel = Class.extend({
     guiButtons: {},
     detectPdP: function() {
