@@ -1144,7 +1144,8 @@ plugCubedModel = Class.extend({
                 ['/curate'            ,'add current song to your selected playlist'],
                 ['/getpos'            ,'get current waitlist position'],
                 ['/version'           ,'displays version number'],
-                ['/commands'          ,'shows this list']
+                ['/commands'          ,'shows this list'],
+                ['/link'              ,'paste link to plugCubed website in chat']
             ];
             var userCommands = '<table>';
             for (var i in commands)
@@ -1217,6 +1218,8 @@ plugCubedModel = Class.extend({
             return plugCubed.log('Running plug&#179; version ' + plugCubed.version.major + '.' + plugCubed.version.minor + '.' + plugCubed.version.patch, null, plugCubed.colors.infoMessage1), true;
         if (value == '/mute')
             return Playback.setVolume(0), true;
+        if (value == '/link')
+            return Models.chat.sendChat('plugCubed : http://tatdk.github.io/plugCubed'), true;
         if (value == '/unmute')
             return Playback.setVolume(Playback.lastVolume), true;
         if (plugCubed.detectPdP() && value == '/muteone' || plugCubed.detectPdP() && value == '/singlemute')
