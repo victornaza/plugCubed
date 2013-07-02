@@ -41,6 +41,7 @@ console.info = function(data) {
     }
 
 };
+if (typeof _avatarTick === 'undefined') _avatarTick = avatarTick;
 var _PCL,
 disconnected = false,
 plugCubedModel = Class.extend({
@@ -348,6 +349,7 @@ plugCubedModel = Class.extend({
         avatarAnimations : true,
         registeredSongs  : [],
         ignore           : [],
+        alertson         : [],
         autoMuted        : false,
         chatlimit        : {
             enabled         : false,
@@ -403,6 +405,8 @@ plugCubedModel = Class.extend({
             if (Emoji._emojify === undefined) Emoji._emojify = Emoji.emojify
             Emoji.emojify = function(data) {return data;}
         }
+        if (!this.settings.avatarAnimations)
+            avatarTick = function() {};
     },
     /**
      * @this {plugCubedModel}
@@ -849,9 +853,10 @@ plugCubedModel = Class.extend({
                 break;
             case 'avataranim':
                 this.settings.avatarAnimations = !this.settings.avatarAnimations;
-                animSpeed = this.settings.avatarAnimations ? 83 : Infinity;
+                plugCubed.changeGUIColor('avataranim',plugCubed.settings.avatarAnimations);
+                avatarTick = this.settings.avatarAnimations ? _avatarTick : function() {},avatarTick(0);
                 break;
-            default: return console.log('Unknown menu key');
+            default: return console.log(this.i18n('menu.unknown'));
         }
         this.saveSettings();
     },
@@ -1050,11 +1055,18 @@ plugCubedModel = Class.extend({
                 setTimeout(function() { plugCubed.settings.recent = false; plugCubed.saveSettings(); },180000);
                 API.sendChat('@' + data.from + ' ' + this.settings.awaymsg);
             }
+        } else for (var i in this.settings.alertson) {
+            if (data.message.indexOf(this.settings.alertson[i]) > -1)
+                document.getElementById("chat-sound").playMentionSound();
         }
         if (this.settings.chatlimit.enabled) {
             var elems = $('#chat-messages').children('div'),num = elems.length,i = 0;
             elems.each(function() {
-                if (++i<num-plugCubed.settings.chatlimit.limit)
+                ++i;
+                var a = num-plugCubed.settings.chatlimit.limit-1;
+                if (i < a)
+                    $(this).remove();
+                else if (i == a && i%2 == 0)
                     $(this).remove();
             });
         }
@@ -1110,7 +1122,7 @@ plugCubedModel = Class.extend({
                 found = ~~i + 2;
                 if (!a.wasSkipped) {
                     if (Popout == null || Popout == undefined) {
-                        document.getElementById("chat-sound").playMentionSound()
+                        document.getElementById("chat-sound").playMentionSound();
                         setTimeout(function(){ document.getElementById("chat-sound").playMentionSound(); },100);
                     } else {
                         Popout.document.getElementById("chat-sound").playMentionSound();
@@ -1161,6 +1173,7 @@ plugCubedModel = Class.extend({
                 ['/meh'               ,'mehs current song'],
                 ['/refresh'           ,'refresh the video'],
                 ['/ignore (username)' ,'ignore all chat messages from user'],
+                ['/alertson (word)'   ,'play mention sound whenever word is written in chat'],
                 ['/curate'            ,'add current song to your selected playlist'],
                 ['/getpos'            ,'get current waitlist position'],
                 ['/version'           ,'displays version number'],

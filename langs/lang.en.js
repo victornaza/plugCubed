@@ -40,7 +40,8 @@ plugCubed.lang = {
         limitchatlog      : 'Limit Chat Log',
         stream            : 'Stream',
         emoji             : 'Emoji',
-        avatarAnimations  : 'Avatar Animations'
+        avatarAnimations  : 'Avatar Animations',
+        unknown           : 'Unknown menu key'
     },
     status: {
         idle              : 'Idle',
