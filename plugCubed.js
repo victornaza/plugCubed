@@ -461,16 +461,16 @@ plugCubedModel = Class.extend({
      */
     initGUI: function() {
         $('#side-right .sidebar-content').html('');
-        this.addGUIButton(this.settings.autowoot,          'woot',        this.i18n('autowoot'));
-        this.addGUIButton(this.settings.autojoin,          'join',        this.i18n('autojoin'));
-        this.addGUIButton(this.settings.userlist,          'userlist',    this.i18n('userlist'));
-        this.addGUIButton(this.settings.customColors,      'colors',      this.i18n('customchat'));
-        this.addGUIButton(this.settings.autorespond,       'autorespond', this.i18n('afkstatus'));
-        this.addGUIButton(this.settings.notify,            'notify',      this.i18n('notify'));
-        this.addGUIButton(this.settings.chatlimit.enabled, 'chatlimit',   this.i18n('limitchat'));
-        this.addGUIButton(!DB.settings.streamDisabled,     'stream',      this.i18n('stream'));
-        this.addGUIButton(this.settings.emoji,             'emoji',       this.i18n('emoji'));
-        this.addGUIButton(this.settings.avatarAnimations,  'avataranim',  this.i18n('avatarAnimations'));
+        this.addGUIButton(this.settings.autowoot,          'woot',        this.i18n('menu.autowoot'));
+        this.addGUIButton(this.settings.autojoin,          'join',        this.i18n('menu.autojoin'));
+        this.addGUIButton(this.settings.userlist,          'userlist',    this.i18n('menu.userlist'));
+        this.addGUIButton(this.settings.customColors,      'colors',      this.i18n('menu.customchatcolors'));
+        this.addGUIButton(this.settings.autorespond,       'autorespond', this.i18n('menu.afkstatus'));
+        this.addGUIButton(this.settings.notify,            'notify',      this.i18n('menu.notify'));
+        this.addGUIButton(this.settings.chatlimit.enabled, 'chatlimit',   this.i18n('menu.limitchatlog'));
+        this.addGUIButton(!DB.settings.streamDisabled,     'stream',      this.i18n('menu.stream'));
+        this.addGUIButton(this.settings.emoji,             'emoji',       this.i18n('menu.emoji'));
+        this.addGUIButton(this.settings.avatarAnimations,  'avataranim',  this.i18n('menu.avatarAnimations'));
     },
     /**
      * @this {plugCubedModel}
