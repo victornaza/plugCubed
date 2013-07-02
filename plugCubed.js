@@ -52,12 +52,12 @@ plugCubedModel = Class.extend({
         major: 1,
         minor: 7,
         patch: 0,
-        prerelease: 'alpha.1',
+        prerelease: 'alpha.1a',
         /**
          * @this {plugCubedModel.version}
          */
         toString: function() {
-            return this.version.major + '.' + this.version.minor + '.' + this.version.patch + (this.version.prerelease !== undefined ? '-' + this.version.prerelease : '');
+            return this.major + '.' + this.minor + '.' + this.patch + (this.prerelease !== undefined ? '-' + this.prerelease : '');
         }
     },
     /**
