@@ -88,7 +88,7 @@ plugCubedModel = Class.extend({
         }
         if (replace) {
             for (i in replace)
-                a = a.split('%'+i).join(replace[i]);
+                a = a.split('%'+(~~i+1)).join(replace[i]);
         }
         return a;
     },
