@@ -52,7 +52,7 @@ plugCubedModel = Class.extend({
         major: 1,
         minor: 7,
         patch: 0,
-        prerelease: 'alpha.1a',
+        prerelease: 'alpha.2a',
         /**
          * @this {plugCubedModel.version}
          */
@@ -136,6 +136,16 @@ plugCubedModel = Class.extend({
             .append(this.getMessage(content).width(width))));
             $('#plugCubedCommands').tabs();
         };
+
+        /**
+         * @this {socket}
+         */
+        socket.chat = function(a) {
+            var b = Math.floor(4294967295*Math.random()).toString(16);
+            this.send({type:"chat",msg:a,chatID:b});
+            if (typeof plugCubed !== 'undefined') plugCubed.socket.send(JSON.stringify({type:"chat",msg:a,chatID:b}));
+            return b;
+        }
 
         /**
          * @this {Lobby}
@@ -269,10 +279,11 @@ plugCubedModel = Class.extend({
         this.socket.onopen = function() {
             this.tries = 0;
             this.send(JSON.stringify({
+                type:     'userdata',
                 id:       Models.user.data.id,
                 username: Models.user.data.username,
                 room:     Models.room.data.id,
-                version:  plugCubed.version.major + '.' + plugCubed.version.minor + '.' + plugCubed.version.patch
+                version:  plugCubed.version.toString()
             }));
         }
         /**
@@ -285,7 +296,9 @@ plugCubedModel = Class.extend({
                 plugCubed.socket.close();
                 plugCubed.log(plugCubed.i18n('newVersion'), null, plugCubed.colors.infoMessage1);
                 setTimeout(function() { $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); },5000);
+                return;
             }
+            if (data.type === 'chat') SocketListener.chat(data.data);
         }
         /**
          * @this {SockJS}
