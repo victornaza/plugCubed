@@ -965,7 +965,7 @@ plugCubedModel = Class.extend({
      */
     onDjAdvance: function(data) {
         if (this.settings.notify === true) {
-            if (this.settings.alerts.songStats === true) this.log(this.i18n('nofity.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]), null, this.settings.colors.stats)
+            if (this.settings.alerts.songStats === true) this.log(this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]), null, this.settings.colors.stats)
             if (this.settings.alerts.songUpdate === true) this.log(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]), null, this.settings.colors.updates)
         }
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
