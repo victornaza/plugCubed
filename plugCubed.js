@@ -17,8 +17,12 @@
  * @author  Jeremy "Colgate" Richardson
  * @author  Thomas "TAT" Andresen
  */
+
+function NotImplementedError() { Error.apply(this, arguments); }
+NotImplementedError.prototype = new Error();
+NotImplementedError.prototype.name = 'NotImplementedError';
+
 if (typeof plugCubed !== 'undefined') plugCubed.close();
-if (typeof _avatarTick === 'undefined') _avatarTick = avatarTick;
 String.prototype.equalsIgnoreCase     = function(other)    { return typeof other !== 'string' ? false : this.toLowerCase() === other.toLowerCase(); };
 String.prototype.startsWith           = function(other)    { return typeof other !== 'string' || other.length > this.length ? false : this.indexOf(other) === 0; };
 String.prototype.endsWith             = function(other)    { return typeof other !== 'string' || other.length > this.length ? false : this.indexOf(other) === this.length-other.length; };
@@ -27,7 +31,6 @@ String.prototype.endsWithIgnoreCase   = function(other)    { return typeof other
 String.prototype.isNumber             = function()         { return !isNaN(parseInt(this,10)) && isFinite(this); };
 String.prototype.isHEX                = function()         { return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(this.substr(0,1) === '#' ? this : '#' + this); };
 Math.randomRange                      = function(min, max) { return min + Math.floor(Math.random()*(max-min+1)); };
-Emoji._emojify = Emoji.emojify;
 console.info = function(data) {
     console.log(data);
     if (_PCL !== undefined) {
@@ -45,14 +48,11 @@ var _PCL,
 disconnected = false,
 plugCubedModel = Class.extend({
     guiButtons: {},
-    detectPdP: function() {
-        return typeof(pdpSocket) !== 'undefined' && pdpSocket._base_url === 'http://socket.plugpony.net:9000/gateway';
-    },
     version: {
         major: 1,
         minor: 7,
         patch: 0,
-        prerelease: 'alpha.2a',
+        prerelease: 'alpha.3',
         /**
          * @this {plugCubedModel.version}
          */
@@ -77,7 +77,7 @@ plugCubedModel = Class.extend({
         };
         //Load language and third-party scripts
         if (localStorage.plugCubedLang === undefined) return;
-        $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/langs/lang.' + localStorage.plugCubedLang + '.js',$.proxy(this.__init,this));
+        $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0-new/langs/lang.' + localStorage.plugCubedLang + '.js',$.proxy(this.__init,this));
         if (typeof jQuery.fn.tabs === 'undefined') {
             $.getScript('http://code.jquery.com/ui/1.10.2/jquery-ui.js');
             $('head').append('<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />');
@@ -103,6 +103,8 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     __init: function() {
+        this.userData = {};
+
         this.minified = false;
         this.colors = {
             userCommands: '66FFFF',
@@ -113,89 +115,52 @@ plugCubedModel = Class.extend({
         this.defaultAwayMsg = this.i18n('AFK');
 
         setTimeout(function() {
-            plugCubed.history = [];
-            plugCubed.getHistory();
+            plugCubed.history = {};
+            var data = API.getHistory();
+            for (var i in data) {
+                var a = data[i],
+                obj = {
+                    id: a.media.id,
+                    author: a.media.author,
+                    title: a.media.title,
+                    wasSkipped: false,
+                    user: {
+                        id: a.user.id.toString(),
+                        username: a.user.username
+                    }
+                };
+                plugCubed.history.push(obj);
+            }
         },1);
 
         this.customColorsStyle = $('<style type="text/css"></css>');
         $('head').append(this.customColorsStyle);
 
-        this.log(this.i18n('running',[this.version.toString()]), null, this.colors.infoMessage1);
-        this.log(this.i18n('commandsHelp'), null, this.colors.infoMessage2);
+        API.chatLog(this.i18n('running',[this.version.toString()]));
+        API.chatLog(this.i18n('commandsHelp'));
 
         /**
          * @this {Dialog}
          */
         Dialog.showPlugCubedCommands = function(user,mod) {
-            this.closeDialog();
-            var width = 620,content = user;
-            if (mod !== undefined)
-                content = '<div id="plugCubedCommands"><ul><li><a href="#user">' + plugCubed.i18n('userCommands') + '</a></li><li><a href="#mod">' + plugCubed.i18n('modCommands') + '</a></li></ul><div id="user">' + user + '</div><div id="mod">' + mod + '</div></div>';
-            this.showDialog($('<div/>').attr('id','dialog-alert').addClass('dialog').css('left',Main.LEFT+(Main.WIDTH-width-15)/2).css('top',200)
-            .width(width+25).height(470).append(this.getHeader(plugCubed.i18n('commandsTitle'))).append($('<div/>').addClass('dialog-body')
-            .append(this.getMessage(content).width(width))));
-            $('#plugCubedCommands').tabs();
+            throw new NotImplementedError();
         };
 
         /**
          * @this {socket}
          */
         socket.chat = function(a) {
-            var b = Math.floor(4294967295*Math.random()).toString(16);
-            this.send({type:"chat",msg:a,chatID:b});
-            if (typeof plugCubed !== 'undefined') plugCubed.socket.send(JSON.stringify({type:"chat",msg:a,chatID:b}));
-            return b;
+            throw new NotImplementedError();
         }
 
-        /**
-         * @this {Lobby}
-         */
-        Lobby.onRoomSelectResponse = function(a) {
-            this.spin(false);
-            this.pendingLoad = false;
-            var b = this.data.length;
-            this.lastCursor = a.cursor;
-            if (0 == a.results.length) this.endOfList = true;
-            else if ((this.data = this.data.concat(a.results)) && 0 < this.data.length) {
-                this.roomList || (this.roomList = $("<ul/>").addClass("room-list"));
-                for (var a = this.data.length, c = b; c < a; ++c) {
-                    var d = this.data[c],
-                        e = $("<div/>").addClass("room-population").append($("<span/>").addClass("room-population-value").text(d.userCount)).append($("<span/>").addClass("room-population-label").html(Lang.lobby.population)),
-                        f = $("<div/>").addClass("meta").append($("<span/>").addClass("room-name").text(d.name)).append($("<span/>").addClass("room-hosted-by").text(Lang.lobby.hostedBy)).append($("<span/>").addClass("room-host-name").text(d.host));
-                    d.media && f.append($("<span/>").addClass("room-now-playing").text(Lang.lobby.nowPlaying)).append($("<span/>").addClass("room-media").text(d.media));
-                    var g = $("<div/>").addClass("room-djs");
-                    if (5 > d.djCount) {
-                        var h;
-                        h = 4 == d.djCount ? Lang.lobby.slotAvailable : Lang.lobby.slotsAvailable.split("%COUNT%").join("" + (5 - d.djCount));
-                        g.append($("<span/>").addClass("room-djs-label").text(h))
-                    } else g.append($("<span/>").addClass("room-djs-label").text(Lang.lobby.noSlots));
-                    f.append(g);
-                    d.friends && 0 < d.friends.length && d.userCount &&
-                        (g = 1 == d.friends.length ? Lang.lobby.friendInHere : Lang.lobby.friendsInHere.split("%COUNT%").join("" + d.friends.length), f.append($("<div/>").addClass("room-friends").append($("<span/>").addClass("room-friends-label").text(g)).attr("title", d.friends.join(", "))));
-                    d = $("<li/>").addClass("room-list-item").data("index", c).data("room", d).mouseenter($.proxy(this.onRoomOver, this)).mouseleave($.proxy(this.onRoomOut, this)).click($.proxy(this.onRoomClick, this)).append(e).append(f);
-                    1 == c % 2 ? d.addClass("alternate-cell") :
-                        d.removeClass("alternate-cell");
-                    this.roomList.append(d)
-                }
-                0 == b && this.lobbyPanelList.append(this.roomList);
-                this.posLobbyLabels()
-            } else Dialog.alert(Lang.alerts.roomNotFound)
-        };
-
-        if (Models.chat._chatCommand === undefined)
-            Models.chat._chatCommand = Models.chat.chatCommand;
-        if (ChatModel._chatCommand   === undefined)
-            ChatModel._chatCommand   = ChatModel.chatCommand;
-
-        Models.chat.chatCommand = this.customChatCommand;
-        ChatModel.chatCommand   = this.customChatCommand;
+        API.on(API.CHAT_COMMAND,this.customChatCommand);
         
         this.loadSettings();
-        $('body').prepend('<link rel="stylesheet" type="text/css" id="plugcubed-css" href="https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.css" />');
+        $('body').prepend('<link rel="stylesheet" type="text/css" id="plugcubed-css" href="https://rawgithub.com/TATDK/plugCubed/1.7.0-new/plugCubed.css" />');
         $('body').append(
             '<div id="side-left" class="sidebar"><div class="sidebar-content"></div></div>' +
             '<div id="side-right" class="sidebar"><div class="sidebar-handle"><span>||</span></div><div class="sidebar-content"></div></div>'
-        ).append('<script type="text/javascript" src="https://rawgithub.com/TATDK/plugCubed/1.7.0/thirdparty.js"></script>');
+        ).append('<script type="text/javascript" src="https://rawgithub.com/TATDK/plugCubed/1.7.0-new/thirdparty.js"></script>');
         this.initGUI();
         this.initAPIListeners();
         if (this.settings.userlist) {
@@ -240,19 +205,17 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     close: function() {
-        Models.chat.chatCommand = Models.chat._chatCommand;
-        ChatModel.chatCommand = ChatModel._chatCommand;
-        API.removeEventListener(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
-        API.removeEventListener(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
-        API.removeEventListener(API.CURATE_UPDATE,    this.proxy.onCurate);
-        API.removeEventListener(API.USER_JOIN,        this.proxy.onUserJoin);
-        API.removeEventListener(API.USER_LEAVE,       this.proxy.onUserLeave);
-        API.removeEventListener(API.CHAT,             this.proxy.onChat);
-        API.removeEventListener(API.VOTE_SKIP,        this.proxy.onSkip);
-        API.removeEventListener(API.USER_SKIP,        this.proxy.onSkip);
-        API.removeEventListener(API.MOD_SKIP,         this.proxy.onSkip);
-        API.removeEventListener(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
-        API.removeEventListener('userUpdate',         this.proxy.onUserlistUpdate);
+        API.off(API.CHAT_COMMAND,     this.customChatCommand);
+        API.off(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
+        API.off(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
+        API.off(API.CURATE_UPDATE,    this.proxy.onCurate);
+        API.off(API.USER_JOIN,        this.proxy.onUserJoin);
+        API.off(API.USER_LEAVE,       this.proxy.onUserLeave);
+        API.off(API.CHAT,             this.proxy.onChat);
+        API.off(API.VOTE_SKIP,        this.proxy.onSkip);
+        API.off(API.USER_SKIP,        this.proxy.onSkip);
+        API.off(API.MOD_SKIP,         this.proxy.onSkip);
+        API.off(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
         for (var i in plugCubed.guiButtons) {
             if (i === undefined || plugCubed.guiButtons[i] === undefined) continue;
             $('#plugcubed-btn-' + i).unbind();
@@ -278,11 +241,12 @@ plugCubedModel = Class.extend({
          */
         this.socket.onopen = function() {
             this.tries = 0;
+            var userData = API.getSelf();
             this.send(JSON.stringify({
                 type:     'userdata',
-                id:       Models.user.data.id,
-                username: Models.user.data.username,
-                room:     Models.room.data.id,
+                id:       userData.id,
+                username: userData.username,
+                room:     window.location.pathname.split('/')[1],
                 version:  plugCubed.version.toString()
             }));
         }
@@ -294,8 +258,8 @@ plugCubedModel = Class.extend({
             if (data.type === 'update') {
                 plugCubed.socket.onclose = function() {};
                 plugCubed.socket.close();
-                plugCubed.log(plugCubed.i18n('newVersion'), null, plugCubed.colors.infoMessage1);
-                setTimeout(function() { $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); },5000);
+                API.chatLog(plugCubed.i18n('newVersion'), null, plugCubed.colors.infoMessage1);
+                setTimeout(function() { $.getScript('https://rawgithub.com/TATDK/plugCubed/1.7.0-new/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); },5000);
                 return;
             }
             if (data.type === 'chat') SocketListener.chat(data.data);
@@ -320,10 +284,6 @@ plugCubedModel = Class.extend({
      */
     showUserlist: function() {
         $('#side-left').show().animate({ 'left': '0px' }, 300, typeof jQuery.easing.easeOutQuart === 'undefined' ? undefined : 'easeOutQuart');
-        if (this.detectPdP()) {
-            if (userlistShow === true) $('#pdpUsers').hide();
-            $('#pdpUsersToggle').hide();
-        }
     },
     /**
      * @this {plugCubedModel}
@@ -333,10 +293,6 @@ plugCubedModel = Class.extend({
         $('#side-left').animate({ 'left': sbarWidth + 'px' }, 300, typeof jQuery.easing.easeOutQuart === 'undefined' ? undefined : 'easeOutQuart', function() {
             $('#side-left').hide();
         });
-        if (this.detectPdP()) {
-            if (userlistShow === true) $('#pdpUsers').show();
-            $('#pdpUsersToggle').show();
-        }
     },
     colorInfo: {
         you        : { title: 'ranks.you',          color: 'FFDD6F' },
@@ -416,16 +372,10 @@ plugCubedModel = Class.extend({
         if (this.settings.customColors)
             this.updateCustomColors();
         if (this.settings.registeredSongs.length > 0 && this.settings.registeredSongs.indexOf(Models.room.data.media.id) > -1) {
-            Playback.setVolume(0);
+            API.setVolume(0);
             this.settings.autoMuted = true;
-            this.log(this.i18n('automuted',[Models.room.data.media.title]), null, this.colors.infoMessage2);
+            API.chatLog(this.i18n('automuted',[Models.room.data.media.title]));
         };
-        if (!this.settings.emoji) {
-            if (Emoji._emojify === undefined) Emoji._emojify = Emoji.emojify
-            Emoji.emojify = function(data) {return data;}
-        }
-        if (!this.settings.avatarAnimations)
-            avatarTick = function() {};
     },
     /**
      * @this {plugCubedModel}
@@ -467,17 +417,16 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     initAPIListeners: function() {
-        API.addEventListener(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
-        API.addEventListener(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
-        API.addEventListener(API.CURATE_UPDATE,    this.proxy.onCurate);
-        API.addEventListener(API.USER_JOIN,        this.proxy.onUserJoin);
-        API.addEventListener(API.USER_LEAVE,       this.proxy.onUserLeave);
-        API.addEventListener(API.CHAT,             this.proxy.onChat);
-        API.addEventListener(API.VOTE_SKIP,        this.proxy.onSkip);
-        API.addEventListener(API.USER_SKIP,        this.proxy.onSkip);
-        API.addEventListener(API.MOD_SKIP,         this.proxy.onSkip);
-        API.addEventListener(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
-        API.addEventListener('userUpdate',         this.proxy.onUserlistUpdate);
+        API.on(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
+        API.on(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
+        API.on(API.CURATE_UPDATE,    this.proxy.onCurate);
+        API.on(API.USER_JOIN,        this.proxy.onUserJoin);
+        API.on(API.USER_LEAVE,       this.proxy.onUserLeave);
+        API.on(API.CHAT,             this.proxy.onChat);
+        API.on(API.VOTE_SKIP,        this.proxy.onSkip);
+        API.on(API.USER_SKIP,        this.proxy.onSkip);
+        API.on(API.MOD_SKIP,         this.proxy.onSkip);
+        API.on(API.WAIT_LIST_UPDATE, this.proxy.onUserlistUpdate);
     },
     /**
      * @this {plugCubedModel}
@@ -493,7 +442,6 @@ plugCubedModel = Class.extend({
         this.addGUIButton(this.settings.chatlimit.enabled, 'chatlimit',   this.i18n('menu.limitchatlog'));
         this.addGUIButton(!DB.settings.streamDisabled,     'stream',      this.i18n('menu.stream'));
         this.addGUIButton(this.settings.emoji,             'emoji',       this.i18n('menu.emoji'));
-        this.addGUIButton(this.settings.avatarAnimations,  'avataranim',  this.i18n('menu.avatarAnimations'));
     },
     /**
      * @this {plugCubedModel}
@@ -520,7 +468,7 @@ plugCubedModel = Class.extend({
         $('#side-left .sidebar-content').bind('contextmenu',function(e){return false;});
         $('#side-left .sidebar-content').html('<h1 class="users">Users: ' + API.getUsers().length + '</h1>');
         var spot = Models.room.getWaitListPosition();
-        var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot !== null ? spot + ' / ' : '') + Models.room.data.waitList.length);
+        var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot !== null ? spot + ' / ' : '') + API.getWaitList().length);
         $('#side-left .sidebar-content').append(waitlistDiv).append('<hr />');
         var users = API.getUsers();
         for (var i in users)
@@ -529,59 +477,25 @@ plugCubedModel = Class.extend({
     /**
      * @this {plugCubedModel}
      */
-    log: function(message, from, color, changeToColor) {
-        var style  = '',
-            div,
-            scroll = false;
-
-        if (color) style = ' style="color:' + (color.substr(0,1) === '#' ? color : '#' + color) + ';"';
-
-        if (from) div = '<div class="chat-message"><span class="chat-from"' + style + '>' + from + '</span><span class="chat-text"' + style + '>: ' + message + '</span></div>';
-        else      div = '<div class="chat-message"><span class="chat-text"' + style + '>' + message + '</span></div>';
-
-        if ($('#chat-messages')[0].scrollHeight - $('#chat-messages').scrollTop() == $('#chat-messages').outerHeight())
-            scroll = true;
-
-        var curChatDiv = Popout ? Popout.Chat.chatMessages : Chat.chatMessages,
-            s          = curChatDiv.scrollTop()>curChatDiv[0].scrollHeight-curChatDiv.height()-20;
-
-        curChatDiv.append(div);
-
-        if (s) curChatDiv.scrollTop(curChatDiv[0].scrollHeight);
-        
-        if (changeToColor) {
-            $(div).click(function(e) {
-                this.childNodes[0].style.color = changeToColor;
-            });
-        }
-    },
-    /**
-     * @this {plugCubedModel}
-     */
     appendUser: function(user) {
-        var username = Utils.cleanTypedString(user.username),prefix;
+        var prefix,username = Utils.cleanTypedString(user.username);
 
-             if (user.curated == true)                                                                          prefix = 'curate';
-        else if (this.isPlugCubedAdmin(user.id))                                                                prefix = 'plugcubed';
-        else if (this.isPlugCubedVIP(user.id))                                                                  prefix = 'vip';
-        else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.FEATUREDDJ)  prefix = 'fdj';
-        else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.BOUNCER)     prefix = 'bouncer';
-        else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.MANAGER)     prefix = 'manager';
-        else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.COHOST)      prefix = 'host';
-        else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == 5)                       prefix = 'host';
-        else if (Models.room.ambassadors[user.id])                                                              prefix = 'ambassador';
-        else if (Models.room.admins[user.id])                                                                   prefix = 'admin';
-        else                                                                                                    prefix = 'normal';
+             if (user.curated == true)                           prefix = 'curate';
+        else if (this.isPlugCubedAdmin(user.id))                 prefix = 'plugcubed';
+        else if (this.isPlugCubedVIP(user.id))                   prefix = 'vip';
+        else if (API.hasPermission(user.id,API.ROLE.FEATUREDDJ)) prefix = 'fdj';
+        else if (API.hasPermission(user.id,API.ROLE.BOUNCER))    prefix = 'bouncer';
+        else if (API.hasPermission(user.id,API.ROLE.MANAGER))    prefix = 'manager';
+        else if (API.hasPermission(user.id,API.ROLE.COHOST))     prefix = 'host';
+        else if (API.hasPermission(user.id,API.ROLE.HOST))       prefix = 'host';
+        else if (API.hasPermission(user.id,API.ROLE.AMBASSADOR)) prefix = 'ambassador';
+        else if (API.hasPermission(user.id,API.ROLE.ADMIN))      prefix = 'admin';
+        else                                                     prefix = 'normal';
 
-        if (Models.room.data.djs.length > 0 && Models.room.data.djs[0].user.id == user.id) {
-            if (prefix === 'normal')
-                this.appendUserItem('void', '#66FFFF', username);
-            else
-                this.appendUserItem(prefix + '_current', '#66FFFF', username);
-        } else if (prefix === 'normal')
-            this.appendUserItem('void',this.colorByVote(user.vote), username);
+        if (Models.room.data.djs.length > 0 && Models.room.data.djs[0].user.id == user.id)
+            this.appendUserItem(prefix === 'normal' ? 'void' : prefix + '_current', '#66FFFF', user.username);
         else
-            this.appendUserItem(prefix + this.prefixByVote(user.vote), this.colorByVote(user.vote), username);
+            this.appendUserItem(prefix === 'normal' ? 'void' : prefix + this.prefixByVote(user.vote),this.colorByVote(user.vote), username);
     },
     colorByVote: function(vote) {
         var color = '';
@@ -624,7 +538,7 @@ plugCubedModel = Class.extend({
                                 case 2:
                                     break;
                                 case 3:
-                                    if (Models.room.data.staff[Models.user.data.id] && Models.room.data.staff[Models.user.data.id] >= Models.user.BOUNCER || plugCubed.isPlugCubedAdmin(Models.user.data.id))
+                                    if (API.hasPermission(undefined,API.ROLE.BOUNCER) || plugCubed.isPlugCubedAdmin(Models.user.data.id))
                                     plugCubed.getUserInfo(username);
                                     break;
                             }
@@ -652,14 +566,14 @@ plugCubedModel = Class.extend({
         if (Models.room.data.staff[Models.user.data.id] && Models.room.data.staff[Models.user.data.id] >= Models.user.BOUNCER) {
             var service;
             switch (type) {
-                case 'kick':     service = ModerationKickUserService; break;
-                case 'removedj': service = ModerationRemoveDJService; break;
-                case 'adddj':    service = ModerationAddDJService;    break;
-                default:         log(this.i18n('error.unknownModeration')); return;
+                case 'kick':     service = moderateKickUser; break;
+                case 'removedj': service = moderateRemoveDJ; break;
+                case 'adddj':    service = moderateAddDJ;    break;
+                default:         API.chatLog(this.i18n('error.unknownModeration')); return;
             }
             var user = this.getUser(target);
-            if (user === null) log(this.i18n('error.userNotFound'));
-            else               new service(user.id,' ');
+            if (user === null) API.chatLog(this.i18n('error.userNotFound'));
+            else               API[service](user.id,' ');
         }
     },
     /**
@@ -667,7 +581,7 @@ plugCubedModel = Class.extend({
      */
     getUserInfo: function(data) {
         var user = this.getUser(data);
-        if (user === null) log(this.i18n('error.userNotFound'));
+        if (user === null) API.chatLog(this.i18n('error.userNotFound'));
         else {
             var rank,
                 status,
@@ -675,39 +589,39 @@ plugCubedModel = Class.extend({
                 position,
                 points      = user.djPoints + user.curatorPoints + user.listenerPoints,
                 voteTotal   = user.wootcount + user.mehcount,
-                waitlistpos = Models.room.getWaitListPosition(user.id),
-                boothpos    = -1;
+                waitlistpos = API.getWaitListPos(),
+                boothpos    = -1,
+                djs         = API.getDJs();
 
-                 if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.FEATUREDDJ) rank = this.i18n('ranks.featureddj');
-            else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.BOUNCER)    rank = this.i18n('ranks.bouncer');
-            else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.MANAGER)    rank = this.i18n('ranks.manager');
-            else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == Models.user.COHOST)     rank = this.i18n('ranks.cohost');
-            else if (Models.room.data.staff[user.id] && Models.room.data.staff[user.id] == 5)                      rank = this.i18n('ranks.host');
-            else if (Models.room.ambassadors[user.id])                                                             rank = this.i18n('ranks.ambassador');
-            else if (Models.room.admins[user.id])                                                                  rank = this.i18n('ranks.admin');
-            else                                                                                                   rank = this.i18n('ranks.regular');
+                 if (API.hasPermission(user.id,API.ROLE.FEATUREDDJ)) rank = this.i18n('ranks.featureddj');
+            else if (API.hasPermission(user.id,API.ROLE.BOUNCER))    rank = this.i18n('ranks.bouncer');
+            else if (API.hasPermission(user.id,API.ROLE.MANAGER))    rank = this.i18n('ranks.manager');
+            else if (API.hasPermission(user.id,API.ROLE.COHOST))     rank = this.i18n('ranks.cohost');
+            else if (API.hasPermission(user.id,API.ROLE.HOST))       rank = this.i18n('ranks.host');
+            else if (API.hasPermission(user.id,API.ROLE.AMBASSADOR)) rank = this.i18n('ranks.ambassador');
+            else if (API.hasPermission(user.id,API.ROLE.ADMIN))      rank = this.i18n('ranks.admin');
+            else                                                     rank = this.i18n('ranks.regular');
 
-            if (waitlistpos === null) {
-                if (Models.room.data.djs.length > 0 && Models.room.data.djs[0].user.id === user.id) {
+            if (waitlistpos === 0) {
+                if (djs.length > 0 && djs[0].user.id === user.id) {
                     position = this.i18n('info.djing');
                     boothpos = 0;
                 } else {
-                    for (var i = 1;i < Models.room.data.djs.length;i++)
-                        boothpos = Models.room.data.djs[i].user.id === user.id ? i : boothpos;
+                    for (var i = 1;i < djs.length;i++)
+                        boothpos = djs.user.id === user.id ? i : boothpos;
                     if (boothpos < 0)
                         position = this.i18n('info.notinlist');
                     else
-                        position = this.i18n('info.inbooth',[boothpos + 1,Models.room.data.djs.length]);
+                        position = this.i18n('info.inbooth',[boothpos + 1,djs.length]);
                 }
             } else
-                position = this.i18n('info.inwaitlist',[waitlistpos,Models.room.data.waitList.length]);
+                position = this.i18n('info.inwaitlist',[waitlistpos,API.getWaitList().length]);
 
             switch (user.status) {
-                case -1: status = this.i18n('status.idle');      break;
-                default: status = this.i18n('status.available'); break;
-                case 1:  status = this.i18n('status.afk');       break;
-                case 2:  status = this.i18n('status.working');   break;
-                case 3:  status = this.i18n('status.sleeping');  break;
+                default:                  status = this.i18n('status.available'); break;
+                case API.STATUS.AFK:      status = this.i18n('status.afk');       break;
+                case API.STATUS.WORKING:  status = this.i18n('status.working');   break;
+                case API.STATUS.SLEEPING: status = this.i18n('status.sleeping');  break;
             }
 
             switch (user.vote) {
@@ -721,7 +635,11 @@ plugCubedModel = Class.extend({
             if (this.isPlugCubedAdmin(user.id)) title = this.i18n('info.specialTitles.developer');
             if (this.isPlugCubedVIP(user.id))   title = this.i18n('info.specialTitles.vip');
 
-            log('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
+            throw new NotImplementedError();
+
+            //Create dialog for this
+
+            /*log('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
             (title ? '<tr><td colspan="2"><strong>' + this.i18n('info.title') + '</strong>: <span style="color:#FFFFFF">' + title + '</span></td></tr>' : '') +
             '<tr><td colspan="2"><strong>' + this.i18n('info.id') + '</strong>: <span style="color:#FFFFFF">' + user.id + '</span></td></tr>' +
             '<tr><td><strong> ' + this.i18n('info.rank') + '</strong>: <span style="color:#FFFFFF">' + rank + '</span></td><td><strong>' + this.i18n('info.joined') + '</strong>: <span style="color:#FFFFFF">' + user.joinTime + '</span></td></tr>' +
@@ -729,7 +647,7 @@ plugCubedModel = Class.extend({
             '<tr><td colspan="2"><strong>' + this.i18n('info.position') + '</strong>: <span style="color:#FFFFFF">' + position + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.points') + '</strong>: <span style="color:#FFFFFF" title = "' + this.i18n('info.pointType.dj',[user.djPoints]) + '  +  ' + this.i18n('info.pointType.listener',[user.listenerPoints]) + '  +  ' + this.i18n('info.pointType.curator',[user.curatorPoints]) + '">' + points + '</span></td><td><strong> ' + this.i18n('info.fans') + '</strong>: <span style="color:#FFFFFF">' + user.fans + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.wootCount') + '</strong>: <span style="color:#FFFFFF">' + user.wootcount + '</span></td><td><strong>' + this.i18n('info.mehCount') + '</strong>: <span style="color:#FFFFFF">' + user.mehcount + '</span></td></tr>' +
-            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table>');
+            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table>');*/
         }
     },
     /**
@@ -748,7 +666,7 @@ plugCubedModel = Class.extend({
                 this.settings.autojoin = !this.settings.autojoin;
                 this.changeGUIColor('join',this.settings.autojoin);
                 if (this.settings.autojoin && $('#button-dj-waitlist-join').length > 0)
-                    API.waitListJoin();
+                    API.djJoin();
                 break;
             case 'userlist':
                 this.settings.userlist = !this.settings.userlist;
@@ -762,31 +680,7 @@ plugCubedModel = Class.extend({
                 }
                 break;
             case 'colors':
-                Dialog.closeDialog();
-                var body = $('<form/>')
-                    .submit('return false')
-                    .append(Dialog.getCheckBox('Enable custom', 'enabled', this.settings.customColors)),j = 0;
-                for (var i in this.colorInfo)
-                    body.append($(Dialog.getInputField(i,this.i18n(this.colorInfo[i].title),this.colorInfo[i].color,this.settings.colors[i],6).css('top',++j*30)).change(function() { $(this).find('.dialog-input-label').css('color','#' + $(this).find('input').val()); }));
-                body = $('<div/>')
-                    .addClass('dialog-body')
-                    .append(body);
-                for (var i in this.settings.colors)
-                    body.find('input[name="' + i + '"]').parents('.dialog-input-container').find('.dialog-input-label').css('color','#' + this.settings.colors[i]);
-                Dialog.context = 'isCustomChatColors';
-                Dialog.submitFunc = $.proxy(this.onColorSubmit, this);
-                return Dialog.showDialog(
-                    $('<div/>')
-                    .attr('id', 'dialog-custom-colors')
-                    .addClass('dialog')
-                    .css('left',Main.LEFT+(Main.WIDTH-230)/2)
-                    .css('top',208.5)
-                    .append(Dialog.getHeader('Custom Chat Colors'))
-                    .append(body)
-                    .append($('<div/>').addClass('dialog-button dialog-default-button').click($.proxy(this.onColorDefault,this)).append($('<span/>').text('Default')))
-                    .append(Dialog.getCancelButton())
-                    .append(Dialog.getSubmitButton(Lang.dialog.save))
-                );
+                throw new NotImplementedError();
                 break;
             case 'autorespond':
                 this.settings.autorespond = !this.settings.autorespond;
@@ -800,63 +694,15 @@ plugCubedModel = Class.extend({
                     }
                     a = a.split('@').join('').trim();
                     this.settings.awaymsg = a === '' ? this.defaultAwayMsg : a;
-                    if (Models.user.data.status <= 0)
-                        Models.user.changeStatus(1);
-                } else Models.user.changeStatus(0);
+                    if (API.getSelf().status <= 0)
+                        API.setStatus(API.STATUS.AFK);
+                } else API.setStatus(API.STATUS.AVAILABLE);
                 break;
             case 'notify':
-                Dialog.closeDialog();
-                Dialog.context = 'isNotifySettings';
-                Dialog.submitFunc = $.proxy(this.onNotifySubmit, this);
-                return Dialog.showDialog(
-                    $('<div/>')
-                    .attr('id','dialog-notify')
-                    .addClass('dialog')
-                    .css('left',Main.LEFT+(Main.WIDTH-230)/2)
-                    .css('top',208.5)
-                    .append(Dialog.getHeader(this.i18n('notify.header')))
-                    .append(
-                        $('<div/>')
-                        .addClass('dialog-body')
-                        .append(
-                            $('<form/>')
-                            .submit('return false')
-                            .append(Dialog.getCheckBox(this.i18n('enable'),         'enabled',    this.settings.notify            ).css('top',10) .css('left',10))
-                            .append(Dialog.getCheckBox(this.i18n('notify.join'),    'join',       this.settings.alerts.join       ).css('top',30) .css('left',30))
-                            .append(Dialog.getCheckBox(this.i18n('notify.leave'),   'leave',      this.settings.alerts.leave      ).css('top',50) .css('left',30))
-                            .append(Dialog.getCheckBox(this.i18n('notify.curate'),  'curate',     this.settings.alerts.curate     ).css('top',70) .css('left',30))
-                            .append(Dialog.getCheckBox(this.i18n('notify.stats'),   'songStats',  this.settings.alerts.songStats  ).css('top',90) .css('left',30))
-                            .append(Dialog.getCheckBox(this.i18n('notify.updates'), 'songUpdate', this.settings.alerts.songUpdate ).css('top',110).css('left',30))
-                        )
-                    )
-                    .append(Dialog.getCancelButton())
-                    .append(Dialog.getSubmitButton(Lang.dialog.save))
-                );
+                throw new NotImplementedError();
                 break;
             case 'chatlimit':
-                Dialog.closeDialog();
-                Dialog.context = 'isChatLimitSettings';
-                Dialog.submitFunc = $.proxy(this.onChatLimitSubmit, this);
-                return Dialog.showDialog(
-                    $('<div/>')
-                    .attr('id','dialog-chat-limit')
-                    .addClass('dialog')
-                    .css('left',Main.LEFT+(Main.WIDTH-230)/2)
-                    .css('top',208.5)
-                    .append(Dialog.getHeader(this.i18n('chatLimit.header')))
-                    .append(
-                        $('<div/>')
-                        .addClass('dialog-body')
-                        .append(
-                            $('<form/>')
-                            .submit('return false')
-                            .append(Dialog.getCheckBox(this.i18n('enable'),'enabled',this.settings.chatlimit.enabled).css('top',10) .css('left',10))
-                            .append(Dialog.getInputField(this.i18n('chatLimit.limit'),'Limit',0,this.settings.chatlimit.limit).css('top',30) .css('left',10))
-                        )
-                    )
-                    .append(Dialog.getCancelButton())
-                    .append(Dialog.getSubmitButton(Lang.dialog.save))
-                );
+                throw new NotImplementedError();
                 break;
             case 'stream':
                 this.changeGUIColor('stream',DB.settings.streamDisabled);
@@ -865,20 +711,8 @@ plugCubedModel = Class.extend({
             case 'emoji':
                 this.settings.emoji = !this.settings.emoji;
                 this.changeGUIColor('emoji',this.settings.emoji);
-                if (!this.settings.emoji) {
-                    if (Emoji._emojify === undefined) Emoji._emojify = Emoji.emojify
-                    Emoji.emojify = function(data) {return data;}
-                } else {
-                    if (Emoji._emojify === undefined) return this.log(this.i18n('error.emoji'), null, this.colors.modCommands);
-                    Emoji.emojify = Emoji._emojify
-                }
                 break;
-            case 'avataranim':
-                this.settings.avatarAnimations = !this.settings.avatarAnimations;
-                plugCubed.changeGUIColor('avataranim',plugCubed.settings.avatarAnimations);
-                avatarTick = this.settings.avatarAnimations ? _avatarTick : function() {},avatarTick(0);
-                break;
-            default: return log(this.i18n('menu.unknown'));
+            default: return API.chatLog(this.i18n('menu.unknown'));
         }
         this.saveSettings();
     },
@@ -886,29 +720,13 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onNotifySubmit: function() {
-        this.settings.notify = $('#dialog-checkbox-enabled').is(':checked');
-        for (var i in this.settings.alerts)
-            this.settings.alerts[i] = $('#dialog-checkbox-' + i).is(':checked');
-        this.changeGUIColor('notify',this.settings.notify);
-        this.saveSettings();
-        Dialog.closeDialog();
+        throw new NotImplementedError();
     },
     /**
      * @this {plugCubedModel}
      */
     onChatLimitSubmit: function() {
-        this.settings.chatlimit.enabled = $('#dialog-checkbox-enabled').is(':checked');
-        this.settings.chatlimit.limit = ~~$('input[name="chat-limit"]').val();
-        this.changeGUIColor('chatlimit',this.settings.chatlimit.enabled);
-        if (this.settings.chatlimit.enabled) {
-            var elems = $('#chat-messages').children('div'),num = elems.length,i = 0;
-            elems.each(function() {
-                if (++i<num-plugCubed.settings.chatlimit.limit)
-                    $(this).remove();
-            });
-        }
-        this.saveSettings();
-        Dialog.closeDialog();
+        throw new NotImplementedError();
     },
     /**
      * @this {plugCubedModel}
@@ -924,22 +742,14 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onColorSubmit: function() {
-        this.settings.customColors = $('#dialog-checkbox-enabled').is(':checked');
-        for (var i in this.settings.colors) {
-            var elem = $('input[name="' + i + '"]');
-            this.settings.colors[i] = elem.val() === '' || !elem.val().isHEX() ? elem.data('ph') : elem.val();
-        }
-        this.updateCustomColors();
-        this.changeGUIColor('colors',this.settings.customColors);
-        this.saveSettings();
-        Dialog.closeDialog();
+        throw new NotImplementedError();
     },
     /**
      * @this {plugCubedModel}
      */
     onVoteUpdate: function(data) {
         if (!data || !data.user) return;
-        var a = Models.room.userHash[data.user.id];
+        var a = API.getUser(data.user.id);
         this.onUserlistUpdate();
 
         if (a.curVote === 1)       a.wootcount--;
@@ -956,8 +766,8 @@ plugCubedModel = Class.extend({
     onCurate: function(data) {
         var media = API.getMedia();
         if (this.settings.notify === true && this.settings.alerts.curate === true)
-            this.log(this.i18n('notify.message.curate',[data.user.username,media.author,media.title]), null, this.settings.colors.curate);
-        Models.room.userHash[data.user.id].curated = true;
+            API.chatLog(this.i18n('notify.message.curate',[data.user.username,media.author,media.title]));
+        API.getUser(data.user.id).curated = true;
         this.onUserlistUpdate();
     },
     /**
@@ -965,11 +775,11 @@ plugCubedModel = Class.extend({
      */
     onDjAdvance: function(data) {
         if (this.settings.notify === true) {
-            if (this.settings.alerts.songStats === true) this.log(this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]), null, this.settings.colors.stats)
-            if (this.settings.alerts.songUpdate === true) this.log(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]), null, this.settings.colors.updates)
+            if (this.settings.alerts.songStats === true) API.chatLog(this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]))
+            if (this.settings.alerts.songUpdate === true) API.chatLog(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]))
         }
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
-        if(Models.user.getPermission() >= Models.user.BOUNCER || this.isPlugCubedAdmin(Models.user.data.id)) this.onHistoryCheck(data.media.id)
+        if (API.getSelf().permission >= 2 || this.isPlugCubedAdmin(API.getSelf().id)) this.onHistoryCheck(data.media.id)
         var obj = {
             id         : data.media.id,
             author     : data.media.author,
@@ -980,16 +790,17 @@ plugCubedModel = Class.extend({
                 username : data.dj.username
             }
         };
-        plugCubed.history.unshift(obj);
-        plugCubed.history.splice(50,plugCubed.history.length-50);
+        this.history.unshift(obj);
+        this.history.splice(50,this.history.length-50);
         if (this.settings.autoMuted && this.settings.registeredSongs.indexOf(data.media.id) < 0) {
-            setTimeout(function(){ Playback.setVolume(Playback.lastVolume); },800);
+            setTimeout(function(){ API.setVolume(plugCubed.lastVolume); },800);
             this.settings.autoMuted = false;
         }
         if (!this.settings.autoMuted && this.settings.registeredSongs.indexOf(data.media.id) > -1) {
-            setTimeout(function() { Playback.setVolume(0); }, 800);
+            setTimeout(function() { API.setVolume(0); }, 800);
             this.settings.autoMuted = true;
-            this.log(i18n('automuted',[data.media.title]), null, this.colors.infoMessage2);
+            this.lastVolume = API.getVolume();
+            API.chatLog(i18n('automuted',[data.media.title]));
 
         }
         this.onUserlistUpdate();
@@ -1001,13 +812,15 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onDjAdvanceLate: function(data) {
-        if (this.settings.autowoot && this.settings.registeredSongs.indexOf(Models.room.data.media.id) < 0) this.woot();
-        if ($('#button-dj-waitlist-join').css('display') === 'block' && this.settings.autojoin)
-            Room.onWaitListJoinClick();
+        if (this.settings.autowoot && this.settings.registeredSongs.indexOf(API.getHistory()[0].media.id) < 0) this.woot();
+        if (this.settings.autojoin) {
+            if ($('#button-dj-play').css('display') === 'block' || $('#button-dj-waitlist-join').css('display') === 'block')
+                API.djJoin();
+        }
     },
     woot: function() {
-        if (Models.room.data.djs === undefined || Models.room.data.djs.length === 0) return;
-        var dj = Models.room.data.djs[0];
+        if (API.getDJs().length === 0) return;
+        var dj = API.getDJs()[0];
         if (dj === null || dj == API.getSelf()) return;
         $('#button-vote-positive').click();
     },
@@ -1016,8 +829,8 @@ plugCubedModel = Class.extend({
      */
     onUserJoin: function(data) {
         if (this.settings.notify === true && this.settings.alerts.join === true)
-            this.log(Utils.cleanTypedString(data.username + ' joined the room'), null, this.settings.colors.join);
-        var a = Models.room.userHash[data.id];
+            API.chatLog(Utils.cleanTypedString(data.username + ' joined the room'));
+        var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
         if (a.curVote === undefined)   a.curVote = 0;
@@ -1029,7 +842,7 @@ plugCubedModel = Class.extend({
      */
     onUserLeave: function(data) {
         if (this.settings.notify === true && this.settings.alerts.leave === true)
-            this.log(Utils.cleanTypedString(data.username + ' left the room'), null, this.settings.colors.leave);
+            API.chatLog(Utils.cleanTypedString(data.username + ' left the room'));
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
@@ -1042,14 +855,14 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     chatDisable: function(data) {
-        var a = data.type == 'mention' && (Models.room.data.staff[data.fromID] && Models.room.data.staff[data.fromID] >= Models.user.BOUNCER),b = data.message.indexOf('@') < 0 && this.isPlugCubedAdmin(data.fromID);
+        var a = data.type == 'mention' && (API.hasPermission(data.fromID,API.ROLE.BOUNCER)),b = data.message.indexOf('@') < 0 && this.isPlugCubedAdmin(data.fromID);
         if (a || b) {
             if (data.message.indexOf('!disable') > -1) {
                 if (this.settings.autojoin) {
                     this.settings.autojoin = false;
                     this.changeGUIColor('join',this.settings.autojoin);
                     this.saveSettings();
-                    API.waitListLeave();
+                    API.djLeave();
                     API.sendChat('@' + data.from + ' Autojoin disabled');
                 } else
                     API.sendChat('@' + data.from + ' Autojoin was not enabled');
@@ -1103,33 +916,6 @@ plugCubedModel = Class.extend({
     /**
      * @this {plugCubedModel}
      */
-    getHistory: function() {
-        var HSS = new HistorySelectService();
-        HSS.successCallback = $.proxy(this.loadHistory,this);
-    },
-    /**
-     * @this {plugCubedModel}
-     */
-    loadHistory: function(data) {
-        this.history = [];
-        for (var i in data) {
-            var a = data[i],
-            obj = {
-                id: a.media.id,
-                author: a.media.author,
-                title: a.media.title,
-                wasSkipped: false,
-                user: {
-                    id: a.user.id.toString(),
-                    username: a.user.username
-                }
-            };
-            this.history.push(obj);
-        }
-    },
-    /**
-     * @this {plugCubedModel}
-     */
     onSkip: function() {
         this.history[1].wasSkipped = true;
     },
@@ -1150,12 +936,12 @@ plugCubedModel = Class.extend({
                         Popout.document.getElementById("chat-sound").playMentionSound();
                         setTimeout(function(){ Popout.document.getElementById("chat-sound").playMentionSound(); },100);
                     }
-                    return Models.chat.onChatReceived({type: 'system',message: 'Song is in history (' + found + ' of ' + this.history.length + ')',language: Models.user.data.language});
+                    return API.chatLog('Song is in history (' + found + ' of ' + this.history.length + ')',true);
                 }
             }
         }
         if (found > 0)
-            return Models.chat.onChatReceived({type: 'system',message: 'Song is in history (' + found + ' of ' + this.history.length + '), but was skipped on the last play',language: Models.user.data.language});
+            return API.chatLog('Song is in history (' + found + ' of ' + this.history.length + '), but was skipped on the last play',true);
     },
     getTimestamp: function() {
         var time = new Date();
@@ -1180,7 +966,6 @@ plugCubedModel = Class.extend({
         if (value.indexOf('/commands') === 0) {
             var commands = [
                 ['/nick'              ,'change username'],
-                ['/idle'              ,'set status to idle'],
                 ['/avail'             ,'set status to available'],
                 ['/afk'               ,'set status to afk'],
                 ['/work'              ,'set status to working'],
@@ -1206,37 +991,35 @@ plugCubedModel = Class.extend({
             for (var i in commands)
                 userCommands += '<tr><td>' + commands[i][0] + '</td><td>' + commands[i][1] + '</td></tr>';
             userCommands += '</table>';
-            if (Models.user.hasPermission(Models.user.BOUNCER)) {
+            if (API.hasPermission(API.ROLE.BOUNCER)) {
                 commands = [
-                    ['/whois (username)'    ,'gives general information about user'         ,Models.user.BOUNCER],
-                    ['/skip'                ,'skip current song'                            ,Models.user.BOUNCER],
-                    ['/kick (username)'     ,'kicks targeted user'                          ,Models.user.BOUNCER],
-                    ['/lock'                ,'locks DJ booth'                               ,Models.user.MANAGER],
-                    ['/unlock'              ,'unlocks DJ booth'                             ,Models.user.MANAGER],
-                    ['/add (username)'      ,'adds targeted user to dj booth/waitlist'      ,Models.user.BOUNCER],
-                    ['/remove (username)'   ,'removes targeted user from dj booth/waitlist' ,Models.user.BOUNCER]
+                    ['/whois (username)'    ,'gives general information about user'         ,API.ROLE.BOUNCER],
+                    ['/skip'                ,'skip current song'                            ,API.ROLE.BOUNCER],
+                    ['/kick (username)'     ,'kicks targeted user'                          ,API.ROLE.BOUNCER],
+                    ['/lock'                ,'locks DJ booth'                               ,API.ROLE.MANAGER],
+                    ['/unlock'              ,'unlocks DJ booth'                             ,API.ROLE.MANAGER],
+                    ['/add (username)'      ,'adds targeted user to dj booth/waitlist'      ,API.ROLE.BOUNCER],
+                    ['/remove (username)'   ,'removes targeted user from dj booth/waitlist' ,API.ROLE.BOUNCER]
                 ];
                 var modCommands = '<table>';
                 for (var i in commands) {
-                    if (Models.user.hasPermission(commands[i][2]))
+                    if (API.hasPermission(commands[i][2]))
                         modCommands += '<tr><td>' + commands[i][0] + '</td><td>' + commands[i][1] + '</td></tr>';
                 }
                 modCommands += '</table>';
-                Dialog.showPlugCubedCommands(userCommands,modCommands);
-            } else
-                Dialog.showPlugCubedCommands(userCommands);
-            return true;
-        }
-        if (value == '/idle') {
-            Models.user.changeStatus(-1);
+                throw new NotImplementedError();
+                //Dialog.showPlugCubedCommands(userCommands,modCommands);
+            } else {
+                //Dialog.showPlugCubedCommands(userCommands);
+            }
             return true;
         }
         if (value == '/avail' || value == '/available') {
-            Models.user.changeStatus(0);
+            API.setStatus(0);
             return true;
         }
         if (value == '/brb' || value == '/away') {
-            Models.user.changeStatus(1);
+            API.setStatus(1);
             if (plugCubed.settings.autojoin) {
                 plugCubed.settings.autojoin = false;
                 plugCubed.changeGUIColor('join',false);
@@ -1245,11 +1028,11 @@ plugCubedModel = Class.extend({
             return true;
         }
         if (value == '/work' || value == '/working') {
-            Models.user.changeStatus(2);
+            API.setStatus(2);
             return true;
         }
         if (value == '/sleep' || value == '/sleeping') {
-            Models.user.changeStatus(3);
+            API.setStatus(3);
             if (plugCubed.settings.autojoin) {
                 plugCubed.settings.autojoin = false;
                 plugCubed.changeGUIColor('join',false);
@@ -1258,9 +1041,9 @@ plugCubedModel = Class.extend({
             return true;
         }
         if (value == '/join')
-            return Room.onWaitListJoinClick(), true;
+            return API.djJoin(), true;
         if (value == '/leave')
-            return API.waitListLeave(),true;
+            return API.djLeave(),true;
         if (value == '/whoami')
             return plugCubed.getUserInfo(Models.user.data.id),true;
         if (value == '/woot')
@@ -1270,57 +1053,45 @@ plugCubedModel = Class.extend({
         if (value == '/refresh')
             return $('#button-refresh').click(), true;
         if (value == '/version')
-            return plugCubed.log(this.i18n('running',[plugCubed.version.toString()]), null, plugCubed.colors.infoMessage1), true;
-        if (value == '/mute')
-            return Playback.setVolume(0), true;
-        if (value == '/link')
-            return Models.chat.sendChat('plugCubed : http://tatdk.github.io/plugCubed'), true;
-        if (value == '/unmute')
-            return Playback.setVolume(Playback.lastVolume), true;
-        if (plugCubed.detectPdP() && value == '/muteone' || plugCubed.detectPdP() && value == '/singlemute')
-            return $('#button-sound').click(), $('#button-sound').click(), true;
-        if (value.indexOf('/nick ') === 0)
-            return Models.user.changeDisplayName(value.substr(6)), true;
-        if (value.indexOf('/curate') === 0) {
-            new DJCurateService(Models.playlist.selectedPlaylistID);
-            setTimeout(function() { Dialog.closeDialog(); },500);
+            return API.chatLog(this.i18n('running',[plugCubed.version.toString()])), true;
+        if (value == '/mute') {
+            plugCubed.lastVolume = API.getVolume();
+            API.setVolume(0);
             return true;
         }
+        if (value == '/link')
+            return API.sendChat('plugCubed : http://tatdk.github.io/plugCubed'), true;
+        if (value == '/unmute')
+            return API.setVolume(plugCubed.lastVolume), true;
         if (value == '/nextsong') {
-            var a = Models.playlistMedia(Models.playlist.selectedPlaylistID).data[0];
-            if (a.id === Models.room.data.media.id && Models.room.data.currentDJ === Models.user.data.id)
-                a = Models.playlistMedia(Models.playlist.selectedPlaylistID).data[1];
-            var found = -1;
-            for (var i in plugCubed.history) {
-                var b = plugCubed.history[i];
-                if (b.id == a.id && ~~i + 1 < 51) {
-                    found = ~~i + 1;
-                    break;
-                }
-            }
-            if (found > 0)
-                return log('<span style="color:'+ plugCubed.colors.infoMessage1 +  '">' + plugCubed('nextsong',[a.title,a.author]) + '</span><br /><span style="color:' + plugCubed.colors.modCommands + '"><strong>' + plugCubed.i18n('isHistory',[found,plugCubed.history.length]) + '</strong></span>'), true;
+            var a = API.getNextMedia();
+            if (a === undefined) API.chatLog(plugCubed.i18n('noNextSong'));
+            else if (a.inHistory)
+                API.chatLog(plugCubed.i18n('nextsong',[a.title,a.author])),plugCubed.i18n('isHistory',[found,plugCubed.history.length]),true);
             else
-                return plugCubed.log(plugCubed('nextsong',[a.title,a.author]), null, plugCubed.colors.infoMessage1), true;
+                API.chatLog(plugCubed.i18n('nextsong',[a.title,a.author]));
         }
         if (value == '/automute') {
-            if (plugCubed.settings.registeredSongs.indexOf(Models.room.data.media.id) < 0) {
-                plugCubed.settings.registeredSongs.push(Models.room.data.media.id);
+            var a = API.getMedia();
+            if (a === undefined) return true;
+            if (plugCubed.settings.registeredSongs.indexOf(a.id) < 0) {
+                plugCubed.settings.registeredSongs.push(a.id);
                 plugCubed.settings.autoMuted = true;
-                Playback.setVolume(0);
-                plugCubed.log(Models.room.data.media.title + ' registered to auto-mute on future plays.', null, plugCubed.colors.infoMessage2);
+                plugCubed.lastVolume = API.getVolume();
+                API.setVolume(0);
+                API.chatLog(a.title + ' registered to auto-mute on future plays.');
             } else {
-                plugCubed.settings.registeredSongs.splice(plugCubed.settings.registeredSongs.indexOf(Models.room.data.media.id), 1);
+                plugCubed.settings.registeredSongs.splice(plugCubed.settings.registeredSongs.indexOf(API.getMedia().id), 1);
                 plugCubed.settings.autoMuted = false;
-                Playback.setVolume(Playback.lastVolume);
-                plugCubed.log(Models.room.data.media.title + ' removed from automute registry.', null, plugCubed.colors.infoMessage2);
+                API.setVolume(plugCubed.lastVolume);
+                API.chatLog(a.title + ' removed from automute registry.');
             }
-                plugCubed.saveSettings();
+            plugCubed.saveSettings();
             return true;
         }
         if (value == '/alertsoff') {
             if (plugCubed.settings.notify) {
-                plugCubed.log(plugCubed.i18n('notify.message.disabled'), null, plugCubed.colors.infoMessage1);
+                API.chatLog(plugCubed.i18n('notify.message.disabled'));
                 plugCubed.settings.notify = false;
                 plugCubed.changeGUIColor('notify',false);
             }
@@ -1328,7 +1099,7 @@ plugCubedModel = Class.extend({
         }
         if (value == '/alertson') {
             if (!plugCubed.settings.notify) {
-                plugCubed.log(plugCubed.i18n('notify.message.enabled'), null, plugCubed.colors.infoMessage1);
+                API.chatLog(plugCubed.i18n('notify.message.enabled'));
                 plugCubed.settings.notify = true;
                 plugCubed.changeGUIColor('notify',true);
             }
@@ -1336,31 +1107,29 @@ plugCubedModel = Class.extend({
         }
         if (value.indexOf('/getpos') === 0) {
             var lookup = plugCubed.getUser(value.substr(8)),
-                user = lookup === null ? Models.user.data : lookup,
-                spot = Models.room.getWaitListPosition(user.id);
+                user = lookup === null ? API.getSelf() : lookup,
+                spot = API.getWaitListPosition(user.id);
             if (spot !== null)
-                plugCubed.log(plugCubed.i18n('info.inwaitlist',[spot,Models.room.data.waitList.length]), null, plugCubed.colors.infoMessage2);
+                API.chatLog(plugCubed.i18n('info.inwaitlist',[spot,Models.room.data.waitList.length]));
             else {
-                spot = -1;
-                for (var i = 0;i < Models.room.data.djs.length;i++)
-                    spot = Models.room.data.djs[i].user.id === user.id ? i : spot;
+                spot = API.getBoothPosition(user.id);
                 if (spot < 0)
-                    plugCubed.log(plugCubed.i18n('info.notinlist'), null, plugCubed.colors.infoMessage2);
+                    API.chatLog(plugCubed.i18n('info.notinlist'));
                 else if (spot === 0)
-                    plugCubed.log(plugCubed.i18n('info.userDjing',[user.id === Models.user.data.id ? plugCubed.i18n('you') : user.username]),null,plugCubed.colors.infoMessage2);
+                    API.chatLog(plugCubed.i18n('info.userDjing',[user.id === API.getSelf().id ? plugCubed.i18n('you') : user.username]));
                 else if (spot === 1)
-                    plugCubed.log(plugCubed.i18n('info.userNextDJ',[user.id === Models.user.data.id ? plugCubed.i18n('you') : user.username]),null,plugCubed.colors.infoMessage2);
+                    API.chatLog(plugCubed.i18n('info.userNextDJ',[user.id === API.getSelf().id ? plugCubed.i18n('you') : user.username]));
                 else
-                    plugCubed.log(plugCubed.i18n('info.inbooth',[spot + 1,Models.room.data.djs.length]), null, plugCubed.colors.infoMessage2);
+                    API.chatLog(plugCubed.i18n('info.inbooth',[spot + 1,API.getDJs().length]));
             }
             return true;
         }
         if (value.indexOf('/ignore ') === 0 || value.indexOf('/unignore ') === 0) {
             var user = plugCubed.getUser(value.substr(8));
-            if (user === null) return plugCubed.log(plugCubed.i18n('error.userNotFound'), null, plugCubed.colors.infoMessage2),true;
-            if (user.id === Models.user.data.id) return plugCubed.log(plugCubed.i18n('error.ignoreSelf'), null, plugCubed.colors.infoMessage2),true;
-            if (plugCubed.settings.ignore.indexOf(user.id) > -1) return plugCubed.settings.ignore.splice(plugCubed.settings.ignore.indexOf(user.id),1),plugCubed.saveSettings(),log(plugCubed.i18n('ignore.disabled',[user.username])),true;
-            return plugCubed.settings.ignore.push(user.id),plugCubed.saveSettings(),log(plugCubed.i18n('ignore.enabled',[user.username])),true;
+            if (user === null) return API.chatLog(plugCubed.i18n('error.userNotFound')),true;
+            if (user.id === API.getSelf().id) return API.chatLog(plugCubed.i18n('error.ignoreSelf')),true;
+            if (plugCubed.settings.ignore.indexOf(user.id) > -1) return plugCubed.settings.ignore.splice(plugCubed.settings.ignore.indexOf(user.id),1),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.disabled',[user.username])),true;
+            return plugCubed.settings.ignore.push(user.id),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.enabled',[user.username])),true;
         }
         if (plugCubed.isPlugCubedAdmin(Models.user.data.id)) {
             if (value.indexOf('/whois ') === 0)
@@ -1368,15 +1137,16 @@ plugCubedModel = Class.extend({
         }
         if (Models.user.hasPermission(Models.user.BOUNCER)) {
             if (value.indexOf('/skip') === 0) {
-                if (Models.room.data.djs[0].user.id == Models.user.data.id) {
+                if (API.getDJs().length < 1) return;
+                if (API.getBoothPosition() === 0) {
                     Room.onSkipClick();
                     return true;
                 } else {
                     var reason = value.substr(5).trim(),
-                        user = plugCubed.getUser(Models.room.data.currentDJ);
+                        user = plugCubed.getUser(API.getDJs()[0]);
                     if (reason)
                         API.sendChat((user != null ? '@' + user.username + ' - ' : '') + 'Reason for skip: ' + reason);
-                    new ModerationForceSkipService();
+                    API.moderateForceSkip();
                     return true;
                 }
             }
@@ -1384,18 +1154,9 @@ plugCubedModel = Class.extend({
                 return plugCubed.getUserInfo(value.substr(7)),true;
             if (value.indexOf('/kick ') === 0) {
                 if (value.indexOf('::') > 0) {
-                    var data = value.substr(6).split(':: '),
-                        time = 60;
-                        if (data.length == 2) {
-                            if (data[1].isNumber())
-                                time = parseFloat(data[1]);
-                            user = plugCubed.getUser(data[0]);
-                            return new ModerationKickUserService(user.id,(data[1].isNumber()?' ':data[1]),time),true;
-                        } else if (data.length == 3) {
-                            time = parseFloat(data[2]);
-                            user = plugCubed.getUser(data[0]);
-                            return new ModerationKickUserService(user.id,data[1],time),true;
-                        }
+                    var data = value.substr(6).split(':: ')
+                        user = plugCubed.getUser(data[0]);
+                        return API.moderateKickUser(user.id,data[1]),true;
                 } else
                     return plugCubed.moderation(value.substr(6),'kick'),true;
             }
@@ -1461,7 +1222,7 @@ if (localStorage.plugCubedLang === undefined) {
                     len = languages.length,
                     x = len == 5 ? 0 : len == 4 ? 75 : len == 3 ? 150 : len == 2 ? 225 : 300;
                 for (var i = 0; i < len; ++i) {
-                    var button = $("<div/>").addClass("lang-button").css('display','inline-block').css("left", x).data("language", languages[i].file).css("cursor", "pointer").append($("<img/>").attr("src", 'https://rawgithub.com/TATDK/plugCubed/1.7.0/flags/flag.' + languages[i].file + '.png').attr('alt',languages[i].name).height(75).width(150));
+                    var button = $("<div/>").addClass("lang-button").css('display','inline-block').css("left", x).data("language", languages[i].file).css("cursor", "pointer").append($("<img/>").attr("src", 'https://rawgithub.com/TATDK/plugCubed/1.7.0-new/flags/flag.' + languages[i].file + '.png').attr('alt',languages[i].name).height(75).width(150));
                     row.append(button);
                     x += 150;
                 }
@@ -1489,7 +1250,7 @@ if (localStorage.plugCubedLang === undefined) {
 
                 this.languages = [];
 
-                $.getJSON('https://rawgithub.com/TATDK/plugCubed/1.7.0/lang.txt',function(data) { self.languages = data; self.show(); })
+                $.getJSON('https://rawgithub.com/TATDK/plugCubed/1.7.0-new/lang.txt',function(data) { self.languages = data; self.show(); })
                 .done(function() { if (self.languages.length === 0) log('<span style="color:#FF0000">Error loading plugCubed</span>'); });
             }
         });
