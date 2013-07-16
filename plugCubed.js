@@ -1067,7 +1067,7 @@ plugCubedModel = Class.extend({
             var a = API.getNextMedia();
             if (a === undefined) API.chatLog(plugCubed.i18n('noNextSong'));
             else if (a.inHistory)
-                API.chatLog(plugCubed.i18n('nextsong',[a.title,a.author])),plugCubed.i18n('isHistory',[found,plugCubed.history.length]),true);
+                API.chatLog(plugCubed.i18n('nextsong',[a.title,a.author])),API.chatLog(plugCubed.i18n('isHistory',[found,plugCubed.history.length]),true);
             else
                 API.chatLog(plugCubed.i18n('nextsong',[a.title,a.author]));
         }
