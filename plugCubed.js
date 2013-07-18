@@ -17,13 +17,6 @@
  * @author  Jeremy "Colgate" Richardson
  * @author  Thomas "TAT" Andresen
  */
-
-function NotImplementedError(a) {
-    this.name = 'NotImplementedError';
-    this.message = a || '';
-}
-NotImplementedError.prototype = Error.prototype;
-
 if (typeof plugCubed !== 'undefined') plugCubed.close();
 String.prototype.equalsIgnoreCase     = function(other)    { return typeof other !== 'string' ? false : this.toLowerCase() === other.toLowerCase(); };
 String.prototype.startsWith           = function(other)    { return typeof other !== 'string' || other.length > this.length ? false : this.indexOf(other) === 0; };
@@ -61,7 +54,7 @@ plugCubedModel = Class.extend({
         major: 2,
         minor: 0,
         patch: 0,
-        prerelease: 'alpha.2',
+        prerelease: 'alpha.3',
         /**
          * @this {plugCubedModel.version}
          */
@@ -214,6 +207,53 @@ plugCubedModel = Class.extend({
             return a;
         });
 
+        define('plugCubed/dialog/customChatColors',['app/views/dialogs/AbstractDialogView','lang/Lang'],function(Dialog,Lang) {
+            var a = Dialog.extend({
+                id: 'dialog-custom-colors',
+                className: 'dialog',
+                render: function() {
+                    var body = $('<table style="width:100%;padding:5px"/>');
+                    body.append('<tr><td>' + plugCubed.i18n('enable') + '</td><td align="right"><input type="checkbox" name="enabled"' + (plugCubed.settings.chatlimit.enabled ? ' checked="checked"' : '') + ' /></td></tr>');
+                    for (var i in plugCubed.colorInfo)
+                        body.append(
+                            $('<tr/>')
+                                .append('<td style="color:#' + plugCubed.settings.colors[i] + '"><span>' + plugCubed.i18n(plugCubed.colorInfo[i].title) + '<span></td>')
+                                .append(
+                                    $('<td align="right"></td>')
+                                        .append(
+                                            $('<input type="text" name="' + i + '" value="' + plugCubed.settings.colors[i] + '" placeholder="' + plugCubed.colorInfo[i].color + '" />')
+                                                .data('default',plugCubed.colorInfo[i].color)
+                                                .css('width','60px')
+                                                .change(function() { $(this).closest('tr').find('span').css('color','#' + $(this).val()); })
+                                        )
+                                )
+                        );
+                    return this.$el.append(this.getHeader(plugCubed.i18n('chatLimit.header')))
+                    .append(this.getBody().append(body))
+                    .append($('<div/>').addClass('dialog-button dialog-default-button').click(function() {
+                        $(this).parent().find('input[type="text"]').each(function() {
+                            var a = $(this);
+                            a.val(a.data('default'));
+                            a.closest('tr').find('span').css('color','#' + a.val());
+                        });
+                    }).append($('<span/>').text('Default')))
+                    .append(this.getCancelButton())
+                    .append(this.getSubmitButton(Lang.dialog.ok)),this._super();
+                },
+                submit: function() {
+                    plugCubed.settings.customColors = this.$el.find('input[name="enabled"]').is(':checked');
+                    for (var i in plugCubed.settings.colors) {
+                        var a = this.$el.find('input[name="' + i + '"]');
+                        plugCubed.settings.colors[i] = a.val() === '' || !a.val().isHEX() ? a.data('default') : a.val();
+                    }
+                    plugCubed.changeGUIColor('colors',plugCubed.settings.customColors);
+                    plugCubed.saveSettings();
+                    this.close();
+                }
+            });
+            return a;
+        });
+
         define('plugCubed/dialog/chatLimit',['app/views/dialogs/AbstractDialogView','lang/Lang'],function(Dialog,Lang) {
             var a = Dialog.extend({
                 id: 'dialog-chat-limit',
@@ -312,6 +352,7 @@ plugCubedModel = Class.extend({
             this.socket.close();
         }
         requirejs.undef('plugCubed/dialog/notify');
+        requirejs.undef('plugCubed/dialog/customChatColors');
         requirejs.undef('plugCubed/dialog/chatLimit');
         requirejs.undef('plugCubed/dialog/commands');
         delete plugCubed;
@@ -348,7 +389,7 @@ plugCubedModel = Class.extend({
                 setTimeout(function() { $.getScript('https://rawgithub.com/TATDK/plugCubed/2.0.0/plugCubed.' + (plugCubed.minified ? 'min.' : '') + 'js'); },5000);
                 return;
             }
-            if (data.type === 'chat') SocketListener.chat(data.data);
+            if (data.type === 'chat') require('app/facades/ChatFacade').receive(data.data);
         }
         /**
          * @this {SockJS}
@@ -455,8 +496,8 @@ plugCubedModel = Class.extend({
             this.settings.autoMuted = true;
             API.chatLog(this.i18n('automuted',[Models.room.data.media.title]));
         }
-        if (JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji === undefined) {
-            var a = JSON.parse(require('app/store/LocalStorage').getItem('settings'));
+        if (JSON.parse(require('app/store/LocalStorage').getItem('prefs')).emoji === undefined) {
+            var a = JSON.parse(require('app/store/LocalStorage').getItem('prefs'));
             a.emoji = true;
             require('app/store/LocalStorage').setItem('settings',JSON.stringify(a));
         }
@@ -525,8 +566,8 @@ plugCubedModel = Class.extend({
         this.addGUIButton(this.settings.autorespond,                                                         'autorespond', this.i18n('menu.afkstatus'));
         this.addGUIButton((this.settings.notify & 1) === 1,                                                  'notify',      this.i18n('menu.notify'));
         this.addGUIButton(this.settings.chatlimit.enabled,                                                   'chatlimit',   this.i18n('menu.limitchatlog'));
-        this.addGUIButton(!JSON.parse(require('app/store/LocalStorage').getItem('settings')).streamDisabled, 'stream',      this.i18n('menu.stream'));
-        this.addGUIButton(JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji,           'emoji',       this.i18n('menu.emoji'));
+        this.addGUIButton(!JSON.parse(require('app/store/LocalStorage').getItem('prefs')).streamDisabled, 'stream',      this.i18n('menu.stream'));
+        this.addGUIButton(JSON.parse(require('app/store/LocalStorage').getItem('prefs')).emoji,           'emoji',       this.i18n('menu.emoji'));
     },
     /**
      * @this {plugCubedModel}
@@ -763,7 +804,7 @@ plugCubedModel = Class.extend({
                 }
                 break;
             case 'colors':
-                throw new NotImplementedError();
+                require(['plugCubed/dialog/customChatColors','app/base/Context','app/events/ShowDialogEvent'],function(a,b,c) {b.dispatch(new c(c.SHOW,new a()))});
                 break;
             case 'autorespond':
                 this.settings.autorespond = !this.settings.autorespond;
@@ -788,12 +829,12 @@ plugCubedModel = Class.extend({
                 require(['plugCubed/dialog/chatLimit','app/base/Context','app/events/ShowDialogEvent'],function(a,b,c) {b.dispatch(new c(c.SHOW,new a()))});
                 break;
             case 'stream':
-                var a = JSON.parse(require('app/store/LocalStorage').getItem('settings')).streamDisabled;
+                var a = JSON.parse(require('app/store/LocalStorage').getItem('prefs')).streamDisabled;
                 this.changeGUIColor('stream',a);
                 return API.sendChat(a ? '/stream on' : '/stream off');
                 break;
             case 'emoji':
-                var a = JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji === false;
+                var a = JSON.parse(require('app/store/LocalStorage').getItem('prefs')).emoji === false;
                 this.changeGUIColor('emoji',a);
                 return API.sendChat(a ? '/emoji on' : '/emoji off');
                 break;
@@ -810,12 +851,6 @@ plugCubedModel = Class.extend({
             elem.val(elem.data('ph'));
             elem.parents('.dialog-input-container').find('.dialog-input-label').css('color','#' + elem.val());
         }
-    },
-    /**
-     * @this {plugCubedModel}
-     */
-    onColorSubmit: function() {
-        throw new NotImplementedError();
     },
     /**
      * @this {plugCubedModel}

@@ -413,6 +413,10 @@
     height: 540px;
 }
 
+#dialog-custom-colors {
+    width: 60px;
+}
+
 #dialog-custom-colors .dialog-body {
     height: 125px;
 }
