@@ -221,6 +221,12 @@ plugCubedModel = Class.extend({
             '</table></div>'
         );
         $('#notify-dialog').hide();
+        $('#notify-dialog').find('input[type="checkbox"]').each(function(){
+            if ($(this).attr('name') == 'enabled')
+                $(this).attr('checked',plugCubed.settings.notify)
+            else
+                $(this).attr('checked',plugCubed.settings.alerts[$(this).attr('name')])
+        })
     },
     onRoomJoin: function() {
         if (typeof plugCubed !== 'undefined') {
