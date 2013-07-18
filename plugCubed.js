@@ -490,7 +490,7 @@ plugCubedModel = Class.extend({
             $('#side-left .sidebar-content').append('<hr />');
         $('#side-left .sidebar-content').bind('contextmenu',function(e){return false;});
         $('#side-left .sidebar-content').html('<h1 class="users">Users: ' + API.getUsers().length + '</h1>');
-        var spot = Models.room.getWaitListPosition();
+        var spot = API.getWaitListPosition();
         var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot !== null ? spot + ' / ' : '') + API.getWaitList().length);
         $('#side-left .sidebar-content').append(waitlistDiv).append('<hr />');
         var users = API.getUsers();
@@ -515,7 +515,7 @@ plugCubedModel = Class.extend({
         else if (API.hasPermission(user.id,API.ROLE.ADMIN))      prefix = 'admin';
         else                                                     prefix = 'normal';
 
-        if (Models.room.data.djs.length > 0 && Models.room.data.djs[0].user.id == user.id)
+        if (API.getDJs.length > 0 && API.getDJs[0].user.id == user.id)
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + '_current', '#66FFFF', user.username);
         else
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + this.prefixByVote(user.vote),this.colorByVote(user.vote), username);
