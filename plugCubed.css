@@ -399,6 +399,11 @@
     background: red;
 }
 
+#dialog-commands {
+    width: 620px;
+    height: 470px;
+}
+
 #dialog-custom-colors {
     width: 230px;
     height: 540px;

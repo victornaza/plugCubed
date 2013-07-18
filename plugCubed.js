@@ -36,12 +36,12 @@ Math.randomRange                      = function(min, max) { return min + Math.f
 console.info = function(data) {
     console.log(data);
     if (_PCL !== undefined) {
-        log('<span style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + ' ' + plugCubed.i18n('reloading') + '</span>');
+        $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + ' ' + plugCubed.i18n('reloading') + '</span></div>');
         setTimeout(function() { location.reload(true); },3E3);
     } else {
         if (!disconnected) {
             disconnected = true;
-            log('<span style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + '</span>');
+            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + '</span></div>');
         }
     }
 
@@ -54,10 +54,10 @@ disconnected = false,
 plugCubedModel = Class.extend({
     guiButtons: {},
     version: {
-        major: 1,
-        minor: 7,
+        major: 2,
+        minor: 0,
         patch: 0,
-        prerelease: 'alpha.3',
+        prerelease: 'alpha.1',
         /**
          * @this {plugCubedModel.version}
          */
@@ -159,24 +159,6 @@ plugCubedModel = Class.extend({
             })(window.history);
             window.addEventListener('pushState',this.proxy.onRoomJoin);
         }
-
-        Dialog = {};
-        /**
-         * @this {Dialog}
-         */
-        Dialog.showPlugCubedCommands = function(user,mod) {
-            throw new NotImplementedError();
-        };
-
-        socket = {};
-        /**
-         * @this {socket}
-         */
-        socket.chat = function(a) {
-            throw new NotImplementedError();
-        }
-
-        API.on(API.CHAT_COMMAND,this.customChatCommand);
         
         this.loadSettings();
         $('body').prepend('<link rel="stylesheet" type="text/css" id="plugcubed-css" href="https://rawgithub.com/TATDK/plugCubed/1.7.0-new/plugCubed.css" />');
@@ -199,34 +181,89 @@ plugCubedModel = Class.extend({
             if (a.joinTime  === undefined) a.joinTime  = this.getTimestamp();
         }
 
-
-        SocketListener = {};
-        SocketListener.chat = function(a) {
-            throw new NotImplementedError();
-            if (typeof plugCubed !== 'undefined' && a.fromID && plugCubed.settings.ignore.indexOf(a.fromID) > -1)
-                return plugCubed.chatDisable(a);
-            Models.chat.receive(a);
-            API.delayDispatch(API.CHAT,a);
-        };
-
         this.Socket();
-        $('body').append('<div id="notify-dialog">' +
-            '<table style="width: 100%;">' + 
-            '<tr><td>' + this.i18n('enable') + '</td><td align="right"><input type="checkbox" name="enabled"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.join') + '</td><td align="right"><input type="checkbox" name="join"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.leave') + '</td><td align="right"><input type="checkbox" name="leave"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.curate') + '</td><td align="right"><input type="checkbox" name="curate"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.stats') + '</td><td align="right"><input type="checkbox" name="songStats"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.updates') + '</td><td align="right"><input type="checkbox" name="songUpdate"  /></td></tr>' +
-            '</table></div>'
-        );
-        $('#notify-dialog').hide();
-        $('#notify-dialog').find('input[type="checkbox"]').each(function(){
-            if ($(this).attr('name') == 'enabled')
-                $(this).attr('checked',plugCubed.settings.notify)
-            else
-                $(this).attr('checked',plugCubed.settings.alerts[$(this).attr('name')])
-        })
+
+        define('plugCubed/dialog/notify',['app/views/dialogs/AbstractDialogView','lang/Lang'],function(Dialog,Lang) {
+            var a = Dialog.extend({
+                id: 'dialog-notify',
+                className: 'dialog',
+                render: function() {
+                    return this.$el.append(this.getHeader(plugCubed.i18n('notify.header'))).append(this.getBody().append('<table style="width: 100%;">' + 
+                        '<tr><td>' + plugCubed.i18n('enable')         + '</td><td align="right"><input type="checkbox" name="enabled"'    + ((plugCubed.settings.notify &  1) ===  1 ? ' checked="checked"' : '') + ' value="1" /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('notify.join')    + '</td><td align="right"><input type="checkbox" name="join"'       + ((plugCubed.settings.notify &  2) ===  2 ? ' checked="checked"' : '') + ' value="2" /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('notify.leave')   + '</td><td align="right"><input type="checkbox" name="leave"'      + ((plugCubed.settings.notify &  4) ===  4 ? ' checked="checked"' : '') + ' value="4" /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('notify.curate')  + '</td><td align="right"><input type="checkbox" name="curate"'     + ((plugCubed.settings.notify &  8) ===  8 ? ' checked="checked"' : '') + ' value="8" /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('notify.stats')   + '</td><td align="right"><input type="checkbox" name="songStats"'  + ((plugCubed.settings.notify & 16) === 16 ? ' checked="checked"' : '') + ' value="16" /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('notify.updates') + '</td><td align="right"><input type="checkbox" name="songUpdate"' + ((plugCubed.settings.notify & 32) === 32 ? ' checked="checked"' : '') + ' value="32" /></td></tr>' +
+                    '</table>')).append(this.getSubmitButton(Lang.dialog.ok)),this._super();
+                },
+                submit: function() {
+                    plugCubed.settings.notify = 0;
+                    this.$el.find(':checked').each(function() {
+                        plugCubed.settings.notify += ~~$(this).val();
+                    });
+                    plugCubed.saveSettings();
+                    plugCubed.changeGUIColor('notify',(plugCubed.settings.notify & 1) === 1);
+                    this.close();
+                }
+            });
+            return a;
+        });
+
+        define('plugCubed/dialog/chatLimit',['app/views/dialogs/AbstractDialogView','lang/Lang'],function(Dialog,Lang) {
+            var a = Dialog.extend({
+                id: 'dialog-chat-limit',
+                className: 'dialog',
+                render: function() {
+                    return this.$el.append(this.getHeader(plugCubed.i18n('chatLimit.header'))).append(this.getBody().append('<table style="width: 100%;">' + 
+                        '<tr><td>' + plugCubed.i18n('enable')          + '</td><td align="right"><input type="checkbox" name="enabled"' + (plugCubed.settings.chatlimit.enabled ? ' checked="checked"' : '') + ' /></td></tr>' +
+                        '<tr><td>' + plugCubed.i18n('chatLimit.limit') + '</td><td align="right"><input type="text" name="limit" value="' + plugCubed.settings.chatlimit.limit + ' /></td></tr>' +
+                    '</table>')).append(this.getSubmitButton(Lang.dialog.ok)),this._super();
+                },
+                submit: function() {
+                    plugCubed.settings.chatlimit.enabled = this.$el.find('input[name="enabled"]').is(':checked');
+                    plugCubed.settings.chatlimit.limit = ~~this.$el.find('input[name="chat-limit"]').val();
+                    plugCubed.changeGUIColor('chatlimit',plugCubed.settings.chatlimit.enabled);
+                    plugCubed.saveSettings();
+                    if (plugCubed.settings.chatlimit.enabled) {
+                        var elems = $('#chat-messages').children('div'),num = elems.length,i = 0;
+                        elems.each(function() {
+                            if (++i<num-plugCubed.settings.chatlimit.limit)
+                                $(this).remove();
+                        });
+                    }
+                    this.close();
+                }
+            });
+            return a;
+        });
+
+        define('plugCubed/dialog/commands',['app/views/dialogs/AbstractDialogView','lang/Lang'],function(Dialog,Lang) {
+            var a = Dialog.extend({
+                id: 'dialog-commands',
+                className: 'dialog',
+                render: function() {
+                    var content = '<table>';
+                    for (var i in plugCubed.userCommands)
+                        content += '<tr><td>' + plugCubed.userCommands[i][0] + '</td><td>' + plugCubed.userCommands[i][1] + '</td></tr>';
+                    content += '</table>';
+                    if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
+                        content = '<div id="plugCubedCommands"><ul><li><a href="#user">' + plugCubed.i18n('userCommands') + '</a></li><li><a href="#mod">' + plugCubed.i18n('modCommands') + '</a></li></ul><div id="user">' + content + '</div><div id="mod"><table>';
+                        for (var i in plugCubed.modCommands) {
+                            if (API.hasPermission(undefined,plugCubed.modCommands[i][2]))
+                                content += '<tr><td>' + plugCubed.modCommands[i][0] + '</td><td>' + plugCubed.modCommands[i][1] + '</td></tr>';
+                        }
+                        content += '</table></div></div>';
+                        content = $(content).tabs();
+                    }
+                    return this.$el.append(this.getHeader(plugCubed.i18n('commandsTitle'))).append(this.getBody().append(content)).append(this.getSubmitButton(Lang.dialog.ok)),this._super();
+                },
+                submit: function() {
+                    this.close();
+                }
+            });
+            return a;
+        });
     },
     onRoomJoin: function() {
         if (typeof plugCubed !== 'undefined') {
@@ -264,11 +301,15 @@ plugCubedModel = Class.extend({
         $('#side-right').remove();
         $('#side-left').remove();
         $('#notify-dialog').remove();
-        //this.customColorsStyle.remove();
+        if (this.customColorsStyle)
+            this.customColorsStyle.remove();
         if (this.socket) {
             this.socket.onclose = function() {};
             this.socket.close();
         }
+        requirejs.undef('plugCubed/dialog/notify');
+        requirejs.undef('plugCubed/dialog/chatLimit');
+        requirejs.undef('plugCubed/dialog/commands');
         delete plugCubed;
     },
     /**
@@ -359,7 +400,7 @@ plugCubedModel = Class.extend({
         userlist         : false,
         autorespond      : false,
         menu             : false,
-        notify           : false,
+        notify           : 0,
         customColors     : false,
         emoji            : true,
         avatarAnimations : true,
@@ -386,13 +427,6 @@ plugCubedModel = Class.extend({
             curate          : '00FF00',
             stats           : '66FFFF',
             updates         : 'FFFF00'
-        },
-        alerts           : {
-            join            : false,
-            leave           : false,
-            curate          : false,
-            songUpdate      : false,
-            songStats       : false
         }
     },
     /**
@@ -416,7 +450,12 @@ plugCubedModel = Class.extend({
             API.setVolume(0);
             this.settings.autoMuted = true;
             API.chatLog(this.i18n('automuted',[Models.room.data.media.title]));
-        };
+        }
+        if (JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji === undefined) {
+            var a = JSON.parse(require('app/store/LocalStorage').getItem('settings'));
+            a.emoji = true;
+            require('app/store/LocalStorage').setItem('settings',JSON.stringify(a));
+        }
     },
     /**
      * @this {plugCubedModel}
@@ -458,6 +497,7 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     initAPIListeners: function() {
+        API.on(API.CHAT_COMMAND,     this.customChatCommand);
         API.on(API.DJ_ADVANCE,       this.proxy.onDjAdvance);
         API.on(API.VOTE_UPDATE,      this.proxy.onVoteUpdate);
         API.on(API.CURATE_UPDATE,    this.proxy.onCurate);
@@ -479,10 +519,10 @@ plugCubedModel = Class.extend({
         this.addGUIButton(this.settings.userlist,                                                            'userlist',    this.i18n('menu.userlist'));
         this.addGUIButton(this.settings.customColors,                                                        'colors',      this.i18n('menu.customchatcolors'));
         this.addGUIButton(this.settings.autorespond,                                                         'autorespond', this.i18n('menu.afkstatus'));
-        this.addGUIButton(this.settings.notify,                                                              'notify',      this.i18n('menu.notify'));
+        this.addGUIButton((this.settings.notify & 1) === 1,                                                  'notify',      this.i18n('menu.notify'));
         this.addGUIButton(this.settings.chatlimit.enabled,                                                   'chatlimit',   this.i18n('menu.limitchatlog'));
         this.addGUIButton(!JSON.parse(require('app/store/LocalStorage').getItem('settings')).streamDisabled, 'stream',      this.i18n('menu.stream'));
-        this.addGUIButton(this.settings.emoji,                                                               'emoji',       this.i18n('menu.emoji'));
+        this.addGUIButton(JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji,           'emoji',       this.i18n('menu.emoji'));
     },
     /**
      * @this {plugCubedModel}
@@ -676,11 +716,7 @@ plugCubedModel = Class.extend({
             if (this.isPlugCubedAdmin(user.id)) title = this.i18n('info.specialTitles.developer');
             if (this.isPlugCubedVIP(user.id))   title = this.i18n('info.specialTitles.vip');
 
-            //throw new NotImplementedError();
-
-            //Create dialog for this
-
-            $('#chat-messages').append('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
+            $('#chat-messages').append('<div class="chat-update"><table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
             (title ? '<tr><td colspan="2"><strong>' + this.i18n('info.title') + '</strong>: <span style="color:#FFFFFF">' + title + '</span></td></tr>' : '') +
             '<tr><td colspan="2"><strong>' + this.i18n('info.id') + '</strong>: <span style="color:#FFFFFF">' + user.id + '</span></td></tr>' +
             '<tr><td><strong> ' + this.i18n('info.rank') + '</strong>: <span style="color:#FFFFFF">' + rank + '</span></td><td><strong>' + this.i18n('info.joined') + '</strong>: <span style="color:#FFFFFF">' + user.joinTime + '</span></td></tr>' +
@@ -688,7 +724,7 @@ plugCubedModel = Class.extend({
             '<tr><td colspan="2"><strong>' + this.i18n('info.position') + '</strong>: <span style="color:#FFFFFF">' + position + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.points') + '</strong>: <span style="color:#FFFFFF" title = "' + this.i18n('info.pointType.dj',[user.djPoints]) + '  +  ' + this.i18n('info.pointType.listener',[user.listenerPoints]) + '  +  ' + this.i18n('info.pointType.curator',[user.curatorPoints]) + '">' + points + '</span></td><td><strong> ' + this.i18n('info.fans') + '</strong>: <span style="color:#FFFFFF">' + user.fans + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.wootCount') + '</strong>: <span style="color:#FFFFFF">' + user.wootcount + '</span></td><td><strong>' + this.i18n('info.mehCount') + '</strong>: <span style="color:#FFFFFF">' + user.mehcount + '</span></td></tr>' +
-            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table>');
+            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table></div>');
         }
     },
     /**
@@ -740,30 +776,10 @@ plugCubedModel = Class.extend({
                 } else API.setStatus(API.STATUS.AVAILABLE);
                 break;
             case 'notify':
-                $('#notify-dialog').dialog({
-                    close: function() {
-                        plugCubed.settings.notify = false
-                        for (var i in plugCubed.settings.alerts) {
-                            plugCubed.settings.alerts[i] = false
-                        }
-                        $(this).find(':checked').each(function() {
-                            var name = $(this).attr('name');
-                            if (name == 'enabled')
-                                plugCubed.settings.notify = true
-                            else
-                                plugCubed.settings.alerts[name] = true
-
-                        });
-                        plugCubed.saveSettings()
-                        plugCubed.changeGUIColor('notify',plugCubed.settings.notify);
-                    },
-                buttons:{Submit:function(){
-                    $(this).dialog('close');
-                }}
-                })
+                require(['plugCubed/dialog/notify','app/base/Context','app/events/ShowDialogEvent'],function(a,b,c) {b.dispatch(new c(c.SHOW,new a()))});
                 break;
             case 'chatlimit':
-                throw new NotImplementedError();
+                require(['plugCubed/dialog/chatLimit','app/base/Context','app/events/ShowDialogEvent'],function(a,b,c) {b.dispatch(new c(c.SHOW,new a()))});
                 break;
             case 'stream':
                 var a = JSON.parse(require('app/store/LocalStorage').getItem('settings')).streamDisabled;
@@ -771,24 +787,13 @@ plugCubedModel = Class.extend({
                 return API.sendChat(a ? '/stream on' : '/stream off');
                 break;
             case 'emoji':
-                this.settings.emoji = !this.settings.emoji;
-                this.changeGUIColor('emoji',this.settings.emoji);
+                var a = JSON.parse(require('app/store/LocalStorage').getItem('settings')).emoji === false;
+                this.changeGUIColor('emoji',a);
+                return API.sendChat(a ? '/emoji on' : '/emoji off');
                 break;
             default: return API.chatLog(this.i18n('menu.unknown'));
         }
         this.saveSettings();
-    },
-    /**
-     * @this {plugCubedModel}
-     */
-    onNotifySubmit: function() {
-        throw new NotImplementedError();
-    },
-    /**
-     * @this {plugCubedModel}
-     */
-    onChatLimitSubmit: function() {
-        throw new NotImplementedError();
     },
     /**
      * @this {plugCubedModel}
@@ -827,8 +832,8 @@ plugCubedModel = Class.extend({
      */
     onCurate: function(data) {
         var media = API.getMedia();
-        if (this.settings.notify === true && this.settings.alerts.curate === true)
-            $('#chat-messages').append('<span style="color:#00FF00">' + this.i18n('notify.message.curate',[data.user.username,media.author,media.title]) + '</span>');
+        if ((this.settings.notify & 9) === 9)
+            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.curate + '">' + this.i18n('notify.message.curate',[data.user.username,media.author,media.title]) + '</span></div>');
         API.getUser(data.user.id).curated = true;
         this.onUserlistUpdate();
     },
@@ -836,10 +841,8 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onDjAdvance: function(data) {
-        if (this.settings.notify === true) {
-            if (this.settings.alerts.songStats === true) API.chatLog(this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]))
-            if (this.settings.alerts.songUpdate === true) API.chatLog(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]))
-        }
+        if ((this.settings.notify & 17) === 17) $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.stats + '">' + this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]) + '</span></div>');
+        if ((this.settings.notify & 33) === 33) $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.updates + '">' + this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]) + '</span></div>');
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
         if (API.hasPermission(undefined, API.ROLE.BOUNCER) || this.isPlugCubedAdmin(API.getUser().id)) this.onHistoryCheck(data.media.id)
         var obj = {
@@ -890,8 +893,8 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onUserJoin: function(data) {
-        if (this.settings.notify === true && this.settings.alerts.join === true)
-            $('#chat-messages').append('<span style="color:#3366FF">' + require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room') + '</span>');
+        if ((this.settings.notify & 3) === 3)
+            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.join + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room') + '</span></div>');
         var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
@@ -903,8 +906,8 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onUserLeave: function(data) {
-        if (this.settings.notify === true && this.settings.alerts.leave === true)
-            $('#chat-messages').append('<span style="color:#3366FF">' + require("app/utils/Utilities").cleanTypedString(data.username + ' left the room') + '</span>');
+        if ((this.settings.notify & 5) === 5)
+            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.leave + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' left the room') + '</span></div>');
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
@@ -945,6 +948,12 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onChat: function(data) {
+        if (data.fromID === API.getUser().id && this.socket.readyState === SockJS.OPEN)
+            this.socket.send(JSON.stringify({type:"chat",msg:data.message,chatID:data.chatID}));
+        if (data.fromID && this.settings.ignore.indexOf(data.fromID) > -1) {
+            this.chatDisable(data);
+            $('.chat-id-' + data.chatID).remove();
+        }
         this.chatDisable(data);
         if (data.type == 'mention') {
             if (this.settings.autorespond && !this.settings.recent) {
@@ -985,15 +994,13 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onHistoryCheck: function(id) {
-        console.log('checking history')
         var found = -1;
         for (var i in this.history) {
             var a = this.history[i];
             if (a.id == id && (~~i + 2) < 51) {
                 found = ~~i + 2;
-                if (!a.wasSkipped) {
+                if (!a.wasSkipped)
                     return API.chatLog('Song is in history (' + found + ' of ' + this.history.length + ')',true);
-                }
             }
         }
         if (found > 0)
@@ -1005,6 +1012,38 @@ plugCubedModel = Class.extend({
         minutes = (minutes < 10 ? '0' : '') + minutes;
         return time.getHours() + ':' + minutes;
     },
+    userCommands: [
+        ['/nick'              ,'change username'],
+        ['/avail'             ,'set status to available'],
+        ['/afk'               ,'set status to afk'],
+        ['/work'              ,'set status to working'],
+        ['/sleep'             ,'set status to sleeping'],
+        ['/join'              ,'join dj booth/waitlist'],
+        ['/leave'             ,'leaves dj booth/waitlist'],
+        ['/whoami'            ,'get your own information'],
+        ['/mute'              ,'set volume to 0'],
+        ['/automute'          ,'register currently playing song to automatically mute on future plays'],
+        ['/unmute'            ,'set volume to last volume'],
+        ['/woot'              ,'woots current song'],
+        ['/meh'               ,'mehs current song'],
+        ['/refresh'           ,'refresh the video'],
+        ['/ignore (username)' ,'ignore all chat messages from user'],
+        ['/alertson (word)'   ,'play mention sound whenever word is written in chat'],
+        ['/curate'            ,'add current song to your selected playlist'],
+        ['/getpos'            ,'get current waitlist position'],
+        ['/version'           ,'displays version number'],
+        ['/commands'          ,'shows this list'],
+        ['/link'              ,'paste link to plugCubed website in chat']
+    ],
+    modCommands: [
+        ['/whois (username)'    ,'gives general information about user'         ,API.ROLE.BOUNCER],
+        ['/skip'                ,'skip current song'                            ,API.ROLE.BOUNCER],
+        ['/kick (username)'     ,'kicks targeted user'                          ,API.ROLE.BOUNCER],
+        ['/lock'                ,'locks DJ booth'                               ,API.ROLE.MANAGER],
+        ['/unlock'              ,'unlocks DJ booth'                             ,API.ROLE.MANAGER],
+        ['/add (username)'      ,'adds targeted user to dj booth/waitlist'      ,API.ROLE.BOUNCER],
+        ['/remove (username)'   ,'removes targeted user from dj booth/waitlist' ,API.ROLE.BOUNCER]
+    ],
     /**
      * @this {Models.chat}
      */
@@ -1020,54 +1059,7 @@ plugCubedModel = Class.extend({
             return true;
         }*/
         if (value.indexOf('/commands') === 0) {
-            var commands = [
-                ['/nick'              ,'change username'],
-                ['/avail'             ,'set status to available'],
-                ['/afk'               ,'set status to afk'],
-                ['/work'              ,'set status to working'],
-                ['/sleep'             ,'set status to sleeping'],
-                ['/join'              ,'join dj booth/waitlist'],
-                ['/leave'             ,'leaves dj booth/waitlist'],
-                ['/whoami'            ,'get your own information'],
-                ['/mute'              ,'set volume to 0'],
-                ['/automute'          ,'register currently playing song to automatically mute on future plays'],
-                ['/unmute'            ,'set volume to last volume'],
-                ['/woot'              ,'woots current song'],
-                ['/meh'               ,'mehs current song'],
-                ['/refresh'           ,'refresh the video'],
-                ['/ignore (username)' ,'ignore all chat messages from user'],
-                ['/alertson (word)'   ,'play mention sound whenever word is written in chat'],
-                ['/curate'            ,'add current song to your selected playlist'],
-                ['/getpos'            ,'get current waitlist position'],
-                ['/version'           ,'displays version number'],
-                ['/commands'          ,'shows this list'],
-                ['/link'              ,'paste link to plugCubed website in chat']
-            ];
-            var userCommands = '<table>';
-            for (var i in commands)
-                userCommands += '<tr><td>' + commands[i][0] + '</td><td>' + commands[i][1] + '</td></tr>';
-            userCommands += '</table>';
-            if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
-                commands = [
-                    ['/whois (username)'    ,'gives general information about user'         ,API.ROLE.BOUNCER],
-                    ['/skip'                ,'skip current song'                            ,API.ROLE.BOUNCER],
-                    ['/kick (username)'     ,'kicks targeted user'                          ,API.ROLE.BOUNCER],
-                    ['/lock'                ,'locks DJ booth'                               ,API.ROLE.MANAGER],
-                    ['/unlock'              ,'unlocks DJ booth'                             ,API.ROLE.MANAGER],
-                    ['/add (username)'      ,'adds targeted user to dj booth/waitlist'      ,API.ROLE.BOUNCER],
-                    ['/remove (username)'   ,'removes targeted user from dj booth/waitlist' ,API.ROLE.BOUNCER]
-                ];
-                var modCommands = '<table>';
-                for (var i in commands) {
-                    if (API.hasPermission(commands[i][2]))
-                        modCommands += '<tr><td>' + commands[i][0] + '</td><td>' + commands[i][1] + '</td></tr>';
-                }
-                modCommands += '</table>';
-                throw new NotImplementedError();
-                //Dialog.showPlugCubedCommands(userCommands,modCommands);
-            } else {
-                //Dialog.showPlugCubedCommands(userCommands);
-            }
+            require(['plugCubed/dialog/commands','app/base/Context','app/events/ShowDialogEvent'],function(a,b,c) {b.dispatch(new c(c.SHOW,new a()))});
             return true;
         }
         if (value == '/avail' || value == '/available') {
@@ -1146,17 +1138,17 @@ plugCubedModel = Class.extend({
             return true;
         }
         if (value == '/alertsoff') {
-            if (plugCubed.settings.notify) {
-                API.chatLog(plugCubed.i18n('notify.message.disabled'));
-                plugCubed.settings.notify = false;
+            if ((plugCubed.settings.notify & 1) === 1) {
+                $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.disabled') + '</span></div>');
+                plugCubed.settings.notify--;
                 plugCubed.changeGUIColor('notify',false);
             }
             return true;
         }
         if (value == '/alertson') {
-            if (!plugCubed.settings.notify) {
-                API.chatLog(plugCubed.i18n('notify.message.enabled'));
-                plugCubed.settings.notify = true;
+            if ((plugCubed.settings.notify & 1) !== 1) {
+                $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.enabled') + '</span></div>');
+                plugCubed.settings.notify++;
                 plugCubed.changeGUIColor('notify',true);
             }
             return true;
@@ -1223,11 +1215,11 @@ plugCubedModel = Class.extend({
         }
         if (API.hasPermission(undefined,API.ROLE.MANAGER)) {
             if (value === '/lock') {
-                API.moderateRoomProps(true,true)
+                API.moderateRoomProps(true,require('app/models/RoomModel').get('waitListEnabled'))
                 return true;
             }
             if (value === '/unlock') {
-                API.moderateRoomProps(false,true)
+                API.moderateRoomProps(false,require('app/models/RoomModel').get('waitListEnabled'))
                 return true;
             }
         }
