@@ -506,15 +506,14 @@ plugCubedModel = Class.extend({
              if (user.curated == true)                           prefix = 'curate';
         else if (this.isPlugCubedAdmin(user.id))                 prefix = 'plugcubed';
         else if (this.isPlugCubedVIP(user.id))                   prefix = 'vip';
-        else if (API.hasPermission(user.id,API.ROLE.FEATUREDDJ)) prefix = 'fdj';
-        else if (API.hasPermission(user.id,API.ROLE.BOUNCER))    prefix = 'bouncer';
-        else if (API.hasPermission(user.id,API.ROLE.MANAGER))    prefix = 'manager';
-        else if (API.hasPermission(user.id,API.ROLE.COHOST))     prefix = 'host';
-        else if (API.hasPermission(user.id,API.ROLE.HOST))       prefix = 'host';
-        else if (API.hasPermission(user.id,API.ROLE.AMBASSADOR)) prefix = 'ambassador';
         else if (API.hasPermission(user.id,API.ROLE.ADMIN))      prefix = 'admin';
+        else if (API.hasPermission(user.id,API.ROLE.AMBASSADOR)) prefix = 'ambassador';
+        else if (API.hasPermission(user.id,API.ROLE.HOST))       prefix = 'host';
+        else if (API.hasPermission(user.id,API.ROLE.COHOST))     prefix = 'host';
+        else if (API.hasPermission(user.id,API.ROLE.MANAGER))    prefix = 'manager';
+        else if (API.hasPermission(user.id,API.ROLE.BOUNCER))    prefix = 'bouncer';       
+        else if (API.hasPermission(user.id,API.ROLE.FEATUREDDJ)) prefix = 'fdj';
         else                                                     prefix = 'normal';
-
         if (API.getDJs.length > 0 && API.getDJs()[0].user.id == user.id)
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + '_current', '#66FFFF', user.username);
         else
@@ -561,7 +560,7 @@ plugCubedModel = Class.extend({
                                 case 2:
                                     break;
                                 case 3:
-                                    if (API.hasPermission(undefined,API.ROLE.BOUNCER) || plugCubed.isPlugCubedAdmin(Models.user.data.id))
+                                    if (API.hasPermission(undefined,API.ROLE.BOUNCER) || plugCubed.isPlugCubedAdmin(API.getUser().id))
                                     plugCubed.getUserInfo(username);
                                     break;
                             }
@@ -586,7 +585,7 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     moderation: function(target, type) {
-        if (Models.room.data.staff[Models.user.data.id] && Models.room.data.staff[Models.user.data.id] >= Models.user.BOUNCER) {
+        if (Models.room.data.staff[API.getSelf().id] && Models.room.data.staff[API.getSelf().id] >= API.ROLE.BOUNCER) {
             var service;
             switch (type) {
                 case 'kick':     service = moderateKickUser; break;
@@ -1015,7 +1014,7 @@ plugCubedModel = Class.extend({
             for (var i in commands)
                 userCommands += '<tr><td>' + commands[i][0] + '</td><td>' + commands[i][1] + '</td></tr>';
             userCommands += '</table>';
-            if (API.hasPermission(API.ROLE.BOUNCER)) {
+            if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
                 commands = [
                     ['/whois (username)'    ,'gives general information about user'         ,API.ROLE.BOUNCER],
                     ['/skip'                ,'skip current song'                            ,API.ROLE.BOUNCER],
@@ -1069,7 +1068,7 @@ plugCubedModel = Class.extend({
         if (value == '/leave')
             return API.djLeave(),true;
         if (value == '/whoami')
-            return plugCubed.getUserInfo(Models.user.data.id),true;
+            return plugCubed.getUserInfo(API.getSelf().id),true;
         if (value == '/woot')
             return $('#button-vote-positive').click(), true;
         if (value == '/meh')
@@ -1155,11 +1154,11 @@ plugCubedModel = Class.extend({
             if (plugCubed.settings.ignore.indexOf(user.id) > -1) return plugCubed.settings.ignore.splice(plugCubed.settings.ignore.indexOf(user.id),1),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.disabled',[user.username])),true;
             return plugCubed.settings.ignore.push(user.id),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.enabled',[user.username])),true;
         }
-        if (plugCubed.isPlugCubedAdmin(Models.user.data.id)) {
+        if (plugCubed.isPlugCubedAdmin(API.getUserid)) {
             if (value.indexOf('/whois ') === 0)
                 return plugCubed.getUserInfo(value.substr(7)),true;
         }
-        if (Models.user.hasPermission(Models.user.BOUNCER)) {
+        if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
             if (value.indexOf('/skip') === 0) {
                 if (API.getDJs().length < 1) return;
                 if (API.getBoothPosition() === 0) {
@@ -1189,13 +1188,13 @@ plugCubedModel = Class.extend({
             if (value.indexOf('/remove ') === 0)
                 return plugCubed.moderation(value.substr(8),'removedj'),true;
         }
-        if (Models.user.hasPermission(Models.user.MANAGER)) {
+        if (API.hasPermission(undefined,API.ROLE.MANAGER)) {
             if (value === '/lock') {
-                new RoomPropsService(document.location.href.split('/')[3],true,Models.room.data.waitListEnabled,Models.room.data.maxPlays,Models.room.data.maxDJs);
+                API.moderateRoomProps(true,true)
                 return true;
             }
             if (value === '/unlock') {
-                new RoomPropsService(document.location.href.split('/')[3],false,Models.room.data.waitListEnabled,Models.room.data.maxPlays,Models.room.data.maxDJs);
+                API.moderateRoomProps(false,true)
                 return true;
             }
         }
