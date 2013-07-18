@@ -210,6 +210,17 @@ plugCubedModel = Class.extend({
         };
 
         this.Socket();
+        $('body').append('<div id="notify-dialog">' +
+            '<table style="width: 100%;">' + 
+            '<tr><td>' + this.i18n('enable') + '</td><td align="right"><input type="checkbox" name="enabled"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.join') + '</td><td align="right"><input type="checkbox" name="join"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.leave') + '</td><td align="right"><input type="checkbox" name="leave"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.curate') + '</td><td align="right"><input type="checkbox" name="curate"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.stats') + '</td><td align="right"><input type="checkbox" name="stats"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.updates') + '</td><td align="right"><input type="checkbox" name="updates"  /></td></tr>' +
+            '</table></div>'
+        );
+        $('#notify-dialog').hide();
     },
     onRoomJoin: function() {
         if (typeof plugCubed !== 'undefined') {
@@ -514,7 +525,8 @@ plugCubedModel = Class.extend({
         else if (API.hasPermission(user.id,API.ROLE.BOUNCER))    prefix = 'bouncer';       
         else if (API.hasPermission(user.id,API.ROLE.FEATUREDDJ)) prefix = 'fdj';
         else                                                     prefix = 'normal';
-        if (API.getDJs.length > 0 && API.getDJs()[0].user.id == user.id)
+
+        if (API.getDJs().length > 0 && API.getDJs()[0].id == user.id)
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + '_current', '#66FFFF', user.username);
         else
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + this.prefixByVote(user.vote),this.colorByVote(user.vote), username);
@@ -611,7 +623,7 @@ plugCubedModel = Class.extend({
                 position,
                 points      = user.djPoints + user.curatorPoints + user.listenerPoints,
                 voteTotal   = user.wootcount + user.mehcount,
-                waitlistpos = API.getWaitListPos(),
+                waitlistpos = API.getWaitListPosition(),
                 boothpos    = -1,
                 djs         = API.getDJs();
 
@@ -657,11 +669,11 @@ plugCubedModel = Class.extend({
             if (this.isPlugCubedAdmin(user.id)) title = this.i18n('info.specialTitles.developer');
             if (this.isPlugCubedVIP(user.id))   title = this.i18n('info.specialTitles.vip');
 
-            throw new NotImplementedError();
+            //throw new NotImplementedError();
 
             //Create dialog for this
 
-            /*log('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
+            $('#chat-messages').append('<table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
             (title ? '<tr><td colspan="2"><strong>' + this.i18n('info.title') + '</strong>: <span style="color:#FFFFFF">' + title + '</span></td></tr>' : '') +
             '<tr><td colspan="2"><strong>' + this.i18n('info.id') + '</strong>: <span style="color:#FFFFFF">' + user.id + '</span></td></tr>' +
             '<tr><td><strong> ' + this.i18n('info.rank') + '</strong>: <span style="color:#FFFFFF">' + rank + '</span></td><td><strong>' + this.i18n('info.joined') + '</strong>: <span style="color:#FFFFFF">' + user.joinTime + '</span></td></tr>' +
@@ -669,7 +681,7 @@ plugCubedModel = Class.extend({
             '<tr><td colspan="2"><strong>' + this.i18n('info.position') + '</strong>: <span style="color:#FFFFFF">' + position + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.points') + '</strong>: <span style="color:#FFFFFF" title = "' + this.i18n('info.pointType.dj',[user.djPoints]) + '  +  ' + this.i18n('info.pointType.listener',[user.listenerPoints]) + '  +  ' + this.i18n('info.pointType.curator',[user.curatorPoints]) + '">' + points + '</span></td><td><strong> ' + this.i18n('info.fans') + '</strong>: <span style="color:#FFFFFF">' + user.fans + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.wootCount') + '</strong>: <span style="color:#FFFFFF">' + user.wootcount + '</span></td><td><strong>' + this.i18n('info.mehCount') + '</strong>: <span style="color:#FFFFFF">' + user.mehcount + '</span></td></tr>' +
-            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table>');*/
+            '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table>');
         }
     },
     /**
@@ -721,7 +733,21 @@ plugCubedModel = Class.extend({
                 } else API.setStatus(API.STATUS.AVAILABLE);
                 break;
             case 'notify':
-                throw new NotImplementedError();
+                $('#notify-dialog').dialog({
+                    close: function() {
+                    //$(this).find(':checked').each(function() {
+                        //var name = $(this).attr('name');
+                        for (var i in plugCubed.settings.alerts) {
+                            plugCubed.settings.alerts[i] = $(this).attr('name').is(':checked');
+                        }
+                        console.log(name)
+                        //$('#form [name="' + name + '"]').val(true);
+                    //});
+                },
+                buttons:{Close:function(){
+                    $(this).dialog('close');
+                }}
+                })
                 break;
             case 'chatlimit':
                 throw new NotImplementedError();
@@ -852,7 +878,7 @@ plugCubedModel = Class.extend({
      */
     onUserJoin: function(data) {
         if (this.settings.notify === true && this.settings.alerts.join === true)
-            API.chatLog(require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room'));
+            $('#chat-messages').append(require("app/utils/Utilities").cleanTypedString('<span style=color:"#3366FF">' + data.username + ' joined the room</span>'));
         var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
@@ -865,7 +891,7 @@ plugCubedModel = Class.extend({
      */
     onUserLeave: function(data) {
         if (this.settings.notify === true && this.settings.alerts.leave === true)
-            API.chatLog(require("app/utils/Utilities").cleanTypedString(data.username + ' left the room'));
+            $('#chat-messages').append(require("app/utils/Utilities").cleanTypedString('<span style=color:"#3366FF">' + data.username + ' left the room</span>'));
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
@@ -1068,7 +1094,7 @@ plugCubedModel = Class.extend({
         if (value == '/leave')
             return API.djLeave(),true;
         if (value == '/whoami')
-            return plugCubed.getUserInfo(API.getSelf().id),true;
+            return plugCubed.getUserInfo(API.getUser().id),true;
         if (value == '/woot')
             return $('#button-vote-positive').click(), true;
         if (value == '/meh')
