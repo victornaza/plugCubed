@@ -36,12 +36,16 @@ Math.randomRange                      = function(min, max) { return min + Math.f
 console.info = function(data) {
     console.log(data);
     if (_PCL !== undefined) {
-        $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + ' ' + plugCubed.i18n('reloading') + '</span></div>');
+        var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+        a.append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + ' ' + plugCubed.i18n('reloading') + '</span></div>');
+        b && a.scrollTop(a[0].scrollHeight);
         setTimeout(function() { location.reload(true); },3E3);
     } else {
         if (!disconnected) {
             disconnected = true;
-            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + '</span></div>');
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#FF0000">' + plugCubed.i18n('disconnected',[plugCubed.getTimestamp()]) + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
         }
     }
 
@@ -57,7 +61,7 @@ plugCubedModel = Class.extend({
         major: 2,
         minor: 0,
         patch: 0,
-        prerelease: 'alpha.1',
+        prerelease: 'alpha.2',
         /**
          * @this {plugCubedModel.version}
          */
@@ -716,7 +720,8 @@ plugCubedModel = Class.extend({
             if (this.isPlugCubedAdmin(user.id)) title = this.i18n('info.specialTitles.developer');
             if (this.isPlugCubedVIP(user.id))   title = this.i18n('info.specialTitles.vip');
 
-            $('#chat-messages').append('<div class="chat-update"><table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><table style="width:100%;color:#CC00CC"><tr><td colspan="2"><strong>' + this.i18n('info.name') + '</strong>: <span style="color:#FFFFFF">' + user.username + '</span></td></tr>' +
             (title ? '<tr><td colspan="2"><strong>' + this.i18n('info.title') + '</strong>: <span style="color:#FFFFFF">' + title + '</span></td></tr>' : '') +
             '<tr><td colspan="2"><strong>' + this.i18n('info.id') + '</strong>: <span style="color:#FFFFFF">' + user.id + '</span></td></tr>' +
             '<tr><td><strong> ' + this.i18n('info.rank') + '</strong>: <span style="color:#FFFFFF">' + rank + '</span></td><td><strong>' + this.i18n('info.joined') + '</strong>: <span style="color:#FFFFFF">' + user.joinTime + '</span></td></tr>' +
@@ -725,6 +730,7 @@ plugCubedModel = Class.extend({
             '<tr><td><strong>' + this.i18n('info.points') + '</strong>: <span style="color:#FFFFFF" title = "' + this.i18n('info.pointType.dj',[user.djPoints]) + '  +  ' + this.i18n('info.pointType.listener',[user.listenerPoints]) + '  +  ' + this.i18n('info.pointType.curator',[user.curatorPoints]) + '">' + points + '</span></td><td><strong> ' + this.i18n('info.fans') + '</strong>: <span style="color:#FFFFFF">' + user.fans + '</span></td></tr>' +
             '<tr><td><strong>' + this.i18n('info.wootCount') + '</strong>: <span style="color:#FFFFFF">' + user.wootcount + '</span></td><td><strong>' + this.i18n('info.mehCount') + '</strong>: <span style="color:#FFFFFF">' + user.mehcount + '</span></td></tr>' +
             '<tr><td colspan="2"><strong>' + this.i18n('info.ratio') + '</strong>: <span style="color:#FFFFFF">' + (voteTotal === 0 ? '0' : (user.wootcount/voteTotal).toFixed(2)) + '</span></td></tr></table></div>');
+            b && a.scrollTop(a[0].scrollHeight);
         }
     },
     /**
@@ -832,8 +838,11 @@ plugCubedModel = Class.extend({
      */
     onCurate: function(data) {
         var media = API.getMedia();
-        if ((this.settings.notify & 9) === 9)
-            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.curate + '">' + this.i18n('notify.message.curate',[data.user.username,media.author,media.title]) + '</span></div>');
+        if ((this.settings.notify & 9) === 9) {
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.curate + '">' + this.i18n('notify.message.curate',[data.user.username,media.author,media.title]) + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
+        }
         API.getUser(data.user.id).curated = true;
         this.onUserlistUpdate();
     },
@@ -841,8 +850,16 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onDjAdvance: function(data) {
-        if ((this.settings.notify & 17) === 17) $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.stats + '">' + this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]) + '</span></div>');
-        if ((this.settings.notify & 33) === 33) $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.updates + '">' + this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]) + '</span></div>');
+        if ((this.settings.notify & 17) === 17) {
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.stats + '">' + this.i18n('notify.message.stats',[data.lastPlay.score.positive,data.lastPlay.score.negative,data.lastPlay.score.curates]) + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
+        }
+        if ((this.settings.notify & 33) === 33) {
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.updates + '">' + this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]) + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
+        }
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
         if (API.hasPermission(undefined, API.ROLE.BOUNCER) || this.isPlugCubedAdmin(API.getUser().id)) this.onHistoryCheck(data.media.id)
         var obj = {
@@ -893,8 +910,11 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onUserJoin: function(data) {
-        if ((this.settings.notify & 3) === 3)
-            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.join + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room') + '</span></div>');
+        if ((this.settings.notify & 3) === 3) {
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.join + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room') + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
+        }
         var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
@@ -906,8 +926,11 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onUserLeave: function(data) {
-        if ((this.settings.notify & 5) === 5)
-            $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.leave + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' left the room') + '</span></div>');
+        if ((this.settings.notify & 5) === 5) {
+            var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+            a.append('<div class="chat-update"><span class="chat-text" style="color:#' + this.settings.colors.leave + '">' + require("app/utils/Utilities").cleanTypedString(data.username + ' left the room') + '</span></div>');
+            b && a.scrollTop(a[0].scrollHeight);
+        }
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
@@ -1139,7 +1162,9 @@ plugCubedModel = Class.extend({
         }
         if (value == '/alertsoff') {
             if ((plugCubed.settings.notify & 1) === 1) {
-                $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.disabled') + '</span></div>');
+                var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+                a.append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.disabled') + '</span></div>');
+                b && a.scrollTop(a[0].scrollHeight);
                 plugCubed.settings.notify--;
                 plugCubed.changeGUIColor('notify',false);
             }
@@ -1147,7 +1172,9 @@ plugCubedModel = Class.extend({
         }
         if (value == '/alertson') {
             if ((plugCubed.settings.notify & 1) !== 1) {
-                $('#chat-messages').append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.enabled') + '</span></div>');
+                var a = $('#chat-messages'),b = a.scrollTop() > a[0].scrollHeight - a.height() - 20;
+                a.append('<div class="chat-update"><span class="chat-text" style="color:#' + plugCubed.colors.infoMessage1 + '">' + plugCubed.i18n('notify.message.enabled') + '</span></div>');
+                b && a.scrollTop(a[0].scrollHeight);
                 plugCubed.settings.notify++;
                 plugCubed.changeGUIColor('notify',true);
             }
