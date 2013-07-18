@@ -264,7 +264,7 @@ plugCubedModel = Class.extend({
          */
         this.socket.onopen = function() {
             this.tries = 0;
-            var userData = API.getSelf();
+            var userData = API.getUser();
             this.send(JSON.stringify({
                 type:     'userdata',
                 id:       userData.id,
@@ -491,7 +491,7 @@ plugCubedModel = Class.extend({
         $('#side-left .sidebar-content').bind('contextmenu',function(e){return false;});
         $('#side-left .sidebar-content').html('<h1 class="users">Users: ' + API.getUsers().length + '</h1>');
         var spot = API.getWaitListPosition();
-        var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot !== null ? spot + ' / ' : '') + API.getWaitList().length);
+        var waitlistDiv = $('<h3></h3>').addClass('waitlistspot').text('Waitlist: ' + (spot != -1 ? spot + ' / ' : '') + API.getWaitList().length);
         $('#side-left .sidebar-content').append(waitlistDiv).append('<hr />');
         var users = API.getUsers();
         for (var i in users)
@@ -501,7 +501,7 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     appendUser: function(user) {
-        var prefix,username = Utils.cleanTypedString(user.username);
+        var prefix,username = require("app/utils/Utilities").cleanTypedString(user.username);
 
              if (user.curated == true)                           prefix = 'curate';
         else if (this.isPlugCubedAdmin(user.id))                 prefix = 'plugcubed';
@@ -515,7 +515,7 @@ plugCubedModel = Class.extend({
         else if (API.hasPermission(user.id,API.ROLE.ADMIN))      prefix = 'admin';
         else                                                     prefix = 'normal';
 
-        if (API.getDJs.length > 0 && API.getDJs[0].user.id == user.id)
+        if (API.getDJs.length > 0 && API.getDJs()[0].user.id == user.id)
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + '_current', '#66FFFF', user.username);
         else
             this.appendUserItem(prefix === 'normal' ? 'void' : prefix + this.prefixByVote(user.vote),this.colorByVote(user.vote), username);
@@ -717,7 +717,7 @@ plugCubedModel = Class.extend({
                     }
                     a = a.split('@').join('').trim();
                     this.settings.awaymsg = a === '' ? this.defaultAwayMsg : a;
-                    if (API.getSelf().status <= 0)
+                    if (API.getUser().status <= 0)
                         API.setStatus(API.STATUS.AFK);
                 } else API.setStatus(API.STATUS.AVAILABLE);
                 break;
@@ -803,7 +803,7 @@ plugCubedModel = Class.extend({
             if (this.settings.alerts.songUpdate === true) API.chatLog(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]))
         }
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
-        if (API.getSelf().permission >= 2 || this.isPlugCubedAdmin(API.getSelf().id)) this.onHistoryCheck(data.media.id)
+        if (API.getUser().permission >= 2 || this.isPlugCubedAdmin(API.getUser().id)) this.onHistoryCheck(data.media.id)
         var obj = {
             id         : data.media.id,
             author     : data.media.author,
@@ -845,7 +845,7 @@ plugCubedModel = Class.extend({
     woot: function() {
         if (API.getDJs().length === 0) return;
         var dj = API.getDJs()[0];
-        if (dj === null || dj == API.getSelf()) return;
+        if (dj === null || dj == API.getUser()) return;
         $('#button-vote-positive').click();
     },
     /**
@@ -853,7 +853,7 @@ plugCubedModel = Class.extend({
      */
     onUserJoin: function(data) {
         if (this.settings.notify === true && this.settings.alerts.join === true)
-            API.chatLog(Utils.cleanTypedString(data.username + ' joined the room'));
+            API.chatLog(require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room'));
         var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
@@ -866,7 +866,7 @@ plugCubedModel = Class.extend({
      */
     onUserLeave: function(data) {
         if (this.settings.notify === true && this.settings.alerts.leave === true)
-            API.chatLog(Utils.cleanTypedString(data.username + ' left the room'));
+            API.chatLog(require("app/utils/Utilities").cleanTypedString(data.username + ' left the room'));
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
@@ -977,7 +977,7 @@ plugCubedModel = Class.extend({
      * @this {Models.chat}
      */
     customChatCommand: function(value) {
-        if (this._chatCommand(value) === true) {
+        /*if (this._chatCommand(value) === true) {
             if (value == '/stream on' || value == '/stream off')
                 plugCubed.changeGUIColor('stream',!DB.settings.streamDisabled);
             if (value == '/afk' && plugCubed.settings.autojoin) {
@@ -986,7 +986,7 @@ plugCubedModel = Class.extend({
                 plugCubed.saveSettings();
             }
             return true;
-        }
+        }*/
         if (value.indexOf('/commands') === 0) {
             var commands = [
                 ['/nick'              ,'change username'],
@@ -1131,18 +1131,18 @@ plugCubedModel = Class.extend({
         }
         if (value.indexOf('/getpos') === 0) {
             var lookup = plugCubed.getUser(value.substr(8)),
-                user = lookup === null ? API.getSelf() : lookup,
+                user = lookup === null ? API.getUser() : lookup,
                 spot = API.getWaitListPosition(user.id);
-            if (spot !== null)
-                API.chatLog(plugCubed.i18n('info.inwaitlist',[spot,Models.room.data.waitList.length]));
+            if (spot != -1)
+                API.chatLog(plugCubed.i18n('info.inwaitlist',[spot,API.getWaitList.length]));
             else {
                 spot = API.getBoothPosition(user.id);
                 if (spot < 0)
                     API.chatLog(plugCubed.i18n('info.notinlist'));
                 else if (spot === 0)
-                    API.chatLog(plugCubed.i18n('info.userDjing',[user.id === API.getSelf().id ? plugCubed.i18n('you') : user.username]));
+                    API.chatLog(plugCubed.i18n('info.userDjing',[user.id === API.getUser().id ? plugCubed.i18n('you') : user.username]));
                 else if (spot === 1)
-                    API.chatLog(plugCubed.i18n('info.userNextDJ',[user.id === API.getSelf().id ? plugCubed.i18n('you') : user.username]));
+                    API.chatLog(plugCubed.i18n('info.userNextDJ',[user.id === API.getUser().id ? plugCubed.i18n('you') : user.username]));
                 else
                     API.chatLog(plugCubed.i18n('info.inbooth',[spot + 1,API.getDJs().length]));
             }
@@ -1151,7 +1151,7 @@ plugCubedModel = Class.extend({
         if (value.indexOf('/ignore ') === 0 || value.indexOf('/unignore ') === 0) {
             var user = plugCubed.getUser(value.substr(8));
             if (user === null) return API.chatLog(plugCubed.i18n('error.userNotFound')),true;
-            if (user.id === API.getSelf().id) return API.chatLog(plugCubed.i18n('error.ignoreSelf')),true;
+            if (user.id === API.getUser().id) return API.chatLog(plugCubed.i18n('error.ignoreSelf')),true;
             if (plugCubed.settings.ignore.indexOf(user.id) > -1) return plugCubed.settings.ignore.splice(plugCubed.settings.ignore.indexOf(user.id),1),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.disabled',[user.username])),true;
             return plugCubed.settings.ignore.push(user.id),plugCubed.saveSettings(),API.chatLog(plugCubed.i18n('ignore.enabled',[user.username])),true;
         }
