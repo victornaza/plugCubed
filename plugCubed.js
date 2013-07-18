@@ -216,8 +216,8 @@ plugCubedModel = Class.extend({
             '<tr><td>' + this.i18n('notify.join') + '</td><td align="right"><input type="checkbox" name="join"  /></td></tr>' +
             '<tr><td>' + this.i18n('notify.leave') + '</td><td align="right"><input type="checkbox" name="leave"  /></td></tr>' +
             '<tr><td>' + this.i18n('notify.curate') + '</td><td align="right"><input type="checkbox" name="curate"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.stats') + '</td><td align="right"><input type="checkbox" name="stats"  /></td></tr>' +
-            '<tr><td>' + this.i18n('notify.updates') + '</td><td align="right"><input type="checkbox" name="updates"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.stats') + '</td><td align="right"><input type="checkbox" name="songStats"  /></td></tr>' +
+            '<tr><td>' + this.i18n('notify.updates') + '</td><td align="right"><input type="checkbox" name="songUpdate"  /></td></tr>' +
             '</table></div>'
         );
         $('#notify-dialog').hide();
@@ -257,6 +257,7 @@ plugCubedModel = Class.extend({
         $('#plugcubed-js-extra').remove();
         $('#side-right').remove();
         $('#side-left').remove();
+        $('#notify-dialog').remove();
         //this.customColorsStyle.remove();
         if (this.socket) {
             this.socket.onclose = function() {};
@@ -597,17 +598,17 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     moderation: function(target, type) {
-        if (Models.room.data.staff[API.getSelf().id] && Models.room.data.staff[API.getSelf().id] >= API.ROLE.BOUNCER) {
+        if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
             var service;
             switch (type) {
-                case 'kick':     service = moderateKickUser; break;
-                case 'removedj': service = moderateRemoveDJ; break;
-                case 'adddj':    service = moderateAddDJ;    break;
+                case 'kick':     service = API.moderateKickUser; break;
+                case 'removedj': service = API.moderateRemoveDJ; break;
+                case 'adddj':    service = API.moderateAddDJ;    break;
                 default:         API.chatLog(this.i18n('error.unknownModeration')); return;
             }
             var user = this.getUser(target);
             if (user === null) API.chatLog(this.i18n('error.userNotFound'));
-            else               API[service](user.id,' ');
+            else               service(user.id,' ');
         }
     },
     /**
@@ -735,16 +736,22 @@ plugCubedModel = Class.extend({
             case 'notify':
                 $('#notify-dialog').dialog({
                     close: function() {
-                    //$(this).find(':checked').each(function() {
-                        //var name = $(this).attr('name');
+                        plugCubed.settings.notify = false
                         for (var i in plugCubed.settings.alerts) {
-                            plugCubed.settings.alerts[i] = $(this).attr('name').is(':checked');
+                            plugCubed.settings.alerts[i] = false
                         }
-                        console.log(name)
-                        //$('#form [name="' + name + '"]').val(true);
-                    //});
-                },
-                buttons:{Close:function(){
+                        $(this).find(':checked').each(function() {
+                            var name = $(this).attr('name');
+                            if (name == 'enabled')
+                                plugCubed.settings.notify = true
+                            else
+                                plugCubed.settings.alerts[name] = true
+
+                        });
+                        plugCubed.saveSettings()
+                        plugCubed.changeGUIColor('notify',plugCubed.settings.notify);
+                    },
+                buttons:{Submit:function(){
                     $(this).dialog('close');
                 }}
                 })
@@ -878,7 +885,7 @@ plugCubedModel = Class.extend({
      */
     onUserJoin: function(data) {
         if (this.settings.notify === true && this.settings.alerts.join === true)
-            $('#chat-messages').append(require("app/utils/Utilities").cleanTypedString('<span style=color:"#3366FF">' + data.username + ' joined the room</span>'));
+            $('#chat-messages').append('<span style="color:#3366FF">' + require("app/utils/Utilities").cleanTypedString(data.username + ' joined the room') + '</span>');
         var a = API.getUser(data.id);
         if (a.wootcount === undefined) a.wootcount = 0;
         if (a.mehcount === undefined)  a.mehcount = 0;
@@ -891,7 +898,7 @@ plugCubedModel = Class.extend({
      */
     onUserLeave: function(data) {
         if (this.settings.notify === true && this.settings.alerts.leave === true)
-            $('#chat-messages').append(require("app/utils/Utilities").cleanTypedString('<span style=color:"#3366FF">' + data.username + ' left the room</span>'));
+            $('#chat-messages').append('<span style="color:#3366FF">' + require("app/utils/Utilities").cleanTypedString(data.username + ' left the room') + '</span>');
         this.onUserlistUpdate();
     },
     isPlugCubedAdmin: function(id) {
