@@ -121,7 +121,7 @@ plugCubedModel = Class.extend({
         this.defaultAwayMsg = this.i18n('AFK');
 
         setTimeout(function() {
-            plugCubed.history = {};
+            plugCubed.history = [];
             var data = API.getHistory();
             for (var i in data) {
                 var a = data[i],
@@ -828,7 +828,7 @@ plugCubedModel = Class.extend({
     onCurate: function(data) {
         var media = API.getMedia();
         if (this.settings.notify === true && this.settings.alerts.curate === true)
-            API.chatLog(this.i18n('notify.message.curate',[data.user.username,media.author,media.title]));
+            $('#chat-messages').append('<span style="color:#00FF00">' + this.i18n('notify.message.curate',[data.user.username,media.author,media.title]) + '</span>');
         API.getUser(data.user.id).curated = true;
         this.onUserlistUpdate();
     },
@@ -841,7 +841,7 @@ plugCubedModel = Class.extend({
             if (this.settings.alerts.songUpdate === true) API.chatLog(this.i18n('notify.message.updates',[data.media.title,data.media.author,data.dj.username]))
         }
         setTimeout($.proxy(this.onDjAdvanceLate,this),Math.randomRange(1,10)*1000);
-        if (API.getUser().permission >= 2 || this.isPlugCubedAdmin(API.getUser().id)) this.onHistoryCheck(data.media.id)
+        if (API.hasPermission(undefined, API.ROLE.BOUNCER) || this.isPlugCubedAdmin(API.getUser().id)) this.onHistoryCheck(data.media.id)
         var obj = {
             id         : data.media.id,
             author     : data.media.author,
@@ -985,19 +985,13 @@ plugCubedModel = Class.extend({
      * @this {plugCubedModel}
      */
     onHistoryCheck: function(id) {
+        console.log('checking history')
         var found = -1;
         for (var i in this.history) {
             var a = this.history[i];
             if (a.id == id && (~~i + 2) < 51) {
                 found = ~~i + 2;
                 if (!a.wasSkipped) {
-                    if (Popout == null || Popout == undefined) {
-                        document.getElementById("chat-sound").playMentionSound();
-                        setTimeout(function(){ document.getElementById("chat-sound").playMentionSound(); },100);
-                    } else {
-                        Popout.document.getElementById("chat-sound").playMentionSound();
-                        setTimeout(function(){ Popout.document.getElementById("chat-sound").playMentionSound(); },100);
-                    }
                     return API.chatLog('Song is in history (' + found + ' of ' + this.history.length + ')',true);
                 }
             }
