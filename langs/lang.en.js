@@ -3,9 +3,6 @@ plugCubed.lang = {
     disconnected          : "Disconnected at %1!",
     reloading             : "Reloading the page in a few seconds.",
     afk                   : "I'm away from keyboard.",
-    userCommands          : 'User Commands',
-    modCommands           : 'Moderation Commands',
-    commandsTitle         : 'plug&#179; Commands',
     running               : 'Running plug&#179; version %1',
     commandsHelp          : 'Use \'/commands\' to see expanded chat commands.',
     newVersion            : 'A new version of plug&#179; has been released. Your script will reload in a few seconds.',
@@ -14,6 +11,11 @@ plugCubed.lang = {
     isHistory             : 'Warning: This song is still in the history (%1 of %2)',
     you                   : 'You',
     enable                : 'Enable',
+    commands: {
+        header            : 'plugCubed Commands',
+        userCommands      : 'User Commands',
+        modCommands       : 'Moderation Commands'
+    },
     chatLimit: {
         header            : 'Limit Chat Log',
         limit             : 'Limit'

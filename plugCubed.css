@@ -401,7 +401,11 @@
 
 #dialog-commands {
     width: 620px;
-    height: 470px;
+    height: 610px;
+}
+
+#dialog-custom-colors .dialog-submit-button {
+    width: 75px;
 }
 
 #dialog-custom-colors {

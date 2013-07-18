@@ -252,7 +252,7 @@ plugCubedModel = Class.extend({
                         content += '<tr><td>' + plugCubed.userCommands[i][0] + '</td><td>' + plugCubed.userCommands[i][1] + '</td></tr>';
                     content += '</table>';
                     if (API.hasPermission(undefined,API.ROLE.BOUNCER)) {
-                        content = '<div id="plugCubedCommands"><ul><li><a href="#user">' + plugCubed.i18n('userCommands') + '</a></li><li><a href="#mod">' + plugCubed.i18n('modCommands') + '</a></li></ul><div id="user">' + content + '</div><div id="mod"><table>';
+                        content = '<div id="plugCubedCommands"><ul><li><a href="#user">' + plugCubed.i18n('commands.userCommands') + '</a></li><li><a href="#mod">' + plugCubed.i18n('commands.modCommands') + '</a></li></ul><div id="user">' + content + '</div><div id="mod"><table>';
                         for (var i in plugCubed.modCommands) {
                             if (API.hasPermission(undefined,plugCubed.modCommands[i][2]))
                                 content += '<tr><td>' + plugCubed.modCommands[i][0] + '</td><td>' + plugCubed.modCommands[i][1] + '</td></tr>';
@@ -260,7 +260,7 @@ plugCubedModel = Class.extend({
                         content += '</table></div></div>';
                         content = $(content).tabs();
                     }
-                    return this.$el.append(this.getHeader(plugCubed.i18n('commandsTitle'))).append(this.getBody().append(content)).append(this.getSubmitButton(Lang.dialog.ok)),this._super();
+                    return this.$el.append(this.getHeader(plugCubed.i18n('commands.header'))).append(this.getBody().append(content)).append(this.getSubmitButton(Lang.dialog.ok)),this._super();
                 },
                 submit: function() {
                     this.close();
