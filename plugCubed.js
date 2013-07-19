@@ -499,7 +499,7 @@ plugCubedModel = Class.extend({
         if (JSON.parse(require('app/store/LocalStorage').getItem('prefs')).emoji === undefined) {
             var a = JSON.parse(require('app/store/LocalStorage').getItem('prefs'));
             a.emoji = true;
-            require('app/store/LocalStorage').setItem('settings',JSON.stringify(a));
+            require('app/store/LocalStorage').setItem('prefs',JSON.stringify(a));
         }
     },
     /**
